@@ -1,0 +1,182 @@
+// SCAS database schema: the 9 tables from SRS section 4.0 / SDD section 4.2.
+// Column and table names follow the documents via @map / @@map.
+// The CHECK constraint on slot times is hand-written in the init migration (Prisma cannot model CHECK).
+
+generator client {
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["partialIndexes"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  STUDENT
+  LECTURER
+  ADMIN
+}
+
+enum AccountStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum SlotStatus {
+  AVAILABLE
+  BOOKED
+  UNAVAILABLE
+}
+
+enum AppointmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  RESCHEDULED
+  CANCELLED
+  COMPLETED
+}
+
+model User {
+  id            Int           @id @default(autoincrement()) @map("user_id")
+  name          String        @db.VarChar(100)
+  email         String        @unique @db.VarChar(100)
+  passwordHash  String        @map("password_hash") @db.VarChar(255)
+  phoneNo       String?       @map("phone_no") @db.VarChar(15)
+  role          Role
+  accountStatus AccountStatus @default(ACTIVE) @map("account_status")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  student  Student?
+  lecturer Lecturer?
+  admin    Admin?
+
+  @@map("users")
+}
+
+model Student {
+  studentId  String  @id @map("student_id") @db.VarChar(20)
+  userId     Int     @unique @map("user_id")
+  programme  String? @db.VarChar(100)
+  faculty    String? @db.VarChar(100)
+  semester   Int?    @db.SmallInt
+  lecturerId String? @map("lecturer_id") @db.VarChar(20)
+
+  user         User          @relation(fields: [userId], references: [id])
+  lecturer     Lecturer?     @relation(fields: [lecturerId], references: [lecturerId])
+  appointments Appointment[]
+
+  @@index([lecturerId])
+  @@map("students")
+}
+
+model Lecturer {
+  lecturerId String  @id @map("lecturer_id") @db.VarChar(20)
+  userId     Int     @unique @map("user_id")
+  department String? @db.VarChar(100)
+  officeRoom String? @map("office_room") @db.VarChar(50)
+  position   String? @db.VarChar(50)
+
+  user         User               @relation(fields: [userId], references: [id])
+  students     Student[]
+  slots        AvailabilitySlot[]
+  appointments Appointment[]
+  limit        ConsultationLimit?
+
+  @@map("lecturers")
+}
+
+model Admin {
+  adminId  String  @id @map("admin_id") @db.VarChar(20)
+  userId   Int     @unique @map("user_id")
+  position String? @db.VarChar(50)
+
+  user    User     @relation(fields: [userId], references: [id])
+  reports Report[]
+
+  @@map("admins")
+}
+
+model AvailabilitySlot {
+  id         Int        @id @default(autoincrement()) @map("slot_id")
+  lecturerId String     @map("lecturer_id") @db.VarChar(20)
+  slotDate   DateTime   @map("slot_date") @db.Date
+  startTime  DateTime   @map("start_time") @db.Time(0)
+  endTime    DateTime   @map("end_time") @db.Time(0)
+  location   String     @db.VarChar(100)
+  slotStatus SlotStatus @default(AVAILABLE) @map("slot_status")
+
+  lecturer     Lecturer      @relation(fields: [lecturerId], references: [lecturerId], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@index([lecturerId, slotDate])
+  @@map("availability_slots")
+}
+
+model Appointment {
+  id         Int               @id @default(autoincrement()) @map("appointment_id")
+  studentId  String            @map("student_id") @db.VarChar(20)
+  lecturerId String            @map("lecturer_id") @db.VarChar(20)
+  slotId     Int               @map("slot_id")
+  purpose    String            @db.Text
+  status     AppointmentStatus @default(PENDING) @map("appointment_status")
+  remarks    String?           @db.Text
+  createdAt  DateTime          @default(now()) @map("created_at")
+  updatedAt  DateTime          @updatedAt @map("updated_at")
+
+  student  Student           @relation(fields: [studentId], references: [studentId])
+  lecturer Lecturer          @relation(fields: [lecturerId], references: [lecturerId])
+  slot     AvailabilitySlot  @relation(fields: [slotId], references: [id], onDelete: Restrict)
+  note     ConsultationNote?
+
+  @@index([lecturerId, status])
+  @@index([studentId, status])
+  @@index([slotId])
+  // BR1 / NFR08: a slot can be held by at most one active appointment. Rejected,
+  // cancelled and completed rows keep their slot_id for history, so a plain UNIQUE won't do.
+  // The predicate is written exactly as Postgres normalises it, otherwise migrate sees drift.
+  @@unique([slotId], map: "appointments_active_slot_key", where: raw("(appointment_status = ANY (ARRAY['PENDING'::\"AppointmentStatus\", 'APPROVED'::\"AppointmentStatus\", 'RESCHEDULED'::\"AppointmentStatus\"]))"))
+  @@map("appointments")
+}
+
+model ConsultationNote {
+  id            Int      @id @default(autoincrement()) @map("note_id")
+  appointmentId Int      @unique @map("appointment_id")
+  notes         String   @db.Text
+  actionPlan    String?  @map("action_plan") @db.Text
+  recordedAt    DateTime @default(now()) @map("recorded_at")
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@map("consultation_notes")
+}
+
+model ConsultationLimit {
+  id                Int      @id @default(autoincrement()) @map("limit_id")
+  lecturerId        String   @unique @map("lecturer_id") @db.VarChar(20)
+  maxPerDay         Int      @default(6) @map("max_per_day") @db.SmallInt
+  maxPerWeek        Int      @default(20) @map("max_per_week") @db.SmallInt
+  maxPerStudentWeek Int      @default(2) @map("max_per_student_week") @db.SmallInt
+  sessionDuration   Int      @default(30) @map("session_duration") @db.SmallInt
+  minNoticeHours    Int      @default(24) @map("min_notice_hours") @db.SmallInt
+  isEnabled         Boolean  @default(true) @map("is_enabled")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  lecturer Lecturer @relation(fields: [lecturerId], references: [lecturerId], onDelete: Cascade)
+
+  @@map("consultation_limits")
+}
+
+model Report {
+  id          Int      @id @default(autoincrement()) @map("report_id")
+  adminId     String   @map("admin_id") @db.VarChar(20)
+  reportType  String   @map("report_type") @db.VarChar(50)
+  dateFrom    DateTime @map("date_from") @db.Date
+  dateTo      DateTime @map("date_to") @db.Date
+  generatedAt DateTime @default(now()) @map("generated_at")
+
+  admin Admin @relation(fields: [adminId], references: [adminId])
+
+  @@map("reports")
+}
