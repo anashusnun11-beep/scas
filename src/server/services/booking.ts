@@ -1,0 +1,151 @@
+import { Prisma } from "@/generated/prisma/client";
+import { LIMIT_STATUSES } from "@/lib/appointment";
+import { formatSlotDate, slotStartsAt, weekRange } from "@/lib/dates";
+import { prisma } from "@/server/db";
+
+type Tx = Prisma.TransactionClient;
+
+export type BookingErrorCode =
+  | "invalid-student-id"
+  | "no-lecturer"
+  | "slot-not-found"
+  | "slot-taken"
+  | "slot-past"
+  | "too-soon"
+  | "day-full"
+  | "week-full"
+  | "student-week-full";
+
+/** A booking rule said no. `field` says which input the message belongs under. */
+export class BookingError extends Error {
+  constructor(
+    readonly code: BookingErrorCode,
+    message: string,
+    readonly field?: "studentId" | "slotId",
+  ) {
+    super(message);
+  }
+}
+
+type LimitCheck = {
+  lecturerId: string;
+  lecturerName: string;
+  studentId: string;
+  slotDate: Date;
+  startsAt: Date;
+  now: Date;
+};
+
+/**
+ * LimitController.checkConsultationLimit (FR13 / BR2), run inside the booking transaction.
+ * Counts are by the slot's date (decision log), using PENDING, APPROVED, RESCHEDULED and COMPLETED.
+ * Skipped entirely when the lecturer has switched limits off.
+ */
+export async function checkConsultationLimit(tx: Tx, c: LimitCheck) {
+  const limit = await tx.consultationLimit.findUnique({ where: { lecturerId: c.lecturerId } });
+  if (!limit || !limit.isEnabled) return;
+
+  const hoursAhead = (c.startsAt.getTime() - c.now.getTime()) / 3_600_000;
+  if (hoursAhead < limit.minNoticeHours) {
+    throw new BookingError(
+      "too-soon",
+      `${c.lecturerName} needs at least ${limit.minNoticeHours} hours notice. Choose a later slot.`,
+      "slotId",
+    );
+  }
+
+  const counted = { lecturerId: c.lecturerId, status: { in: [...LIMIT_STATUSES] } };
+  const week = weekRange(c.slotDate);
+  const [day, inWeek, studentInWeek] = await Promise.all([
+    tx.appointment.count({ where: { ...counted, slot: { slotDate: c.slotDate } } }),
+    tx.appointment.count({ where: { ...counted, slot: { slotDate: { gte: week.start, lt: week.end } } } }),
+    tx.appointment.count({ where: { ...counted, studentId: c.studentId, slot: { slotDate: { gte: week.start, lt: week.end } } } }),
+  ]);
+
+  if (studentInWeek >= limit.maxPerStudentWeek) {
+    throw new BookingError(
+      "student-week-full",
+      `You already have ${studentInWeek} booking${studentInWeek === 1 ? "" : "s"} with ${c.lecturerName} in the week of ${formatSlotDate(week.start)}. The limit is ${limit.maxPerStudentWeek} per student per week, so choose a slot in another week.`,
+      "slotId",
+    );
+  }
+  if (day >= limit.maxPerDay) {
+    throw new BookingError("day-full", `${c.lecturerName} is fully booked on ${formatSlotDate(c.slotDate)} (${limit.maxPerDay} per day). Choose another day.`, "slotId");
+  }
+  if (inWeek >= limit.maxPerWeek) {
+    throw new BookingError(
+      "week-full",
+      `${c.lecturerName} is fully booked in the week of ${formatSlotDate(week.start)} (${limit.maxPerWeek} per week). Choose a slot in another week.`,
+      "slotId",
+    );
+  }
+}
+
+/**
+ * AppointmentController.submitBooking (FR05, BR1, BR2), following SD3:
+ * verify student ID -> check slot status -> check consultation limit -> insert PENDING -> slot BOOKED.
+ *
+ * Race safety (two students, one slot, same instant):
+ * - a transaction-scoped advisory lock per lecturer serialises bookings for that lecturer, so the
+ *   limit counts can't be read by two bookings at once;
+ * - the slot is only flipped with `updateMany ... where slot_status = AVAILABLE`, and anything but
+ *   exactly 1 updated row rolls the whole booking back;
+ * - the partial unique index on appointments(slot_id) is the last line of defence.
+ */
+export async function submitBooking(input: { userId: number; studentIdInput: string; slotId: number; purpose: string }, now = new Date()) {
+  const student = await prisma.student.findUnique({
+    where: { userId: input.userId },
+    select: { studentId: true, lecturerId: true, lecturer: { select: { user: { select: { name: true } } } } },
+  });
+
+  // «include» Insert Student ID (SD3 step 11): it must be the signed-in student's own ID.
+  if (!student || student.studentId !== input.studentIdInput) {
+    throw new BookingError("invalid-student-id", "Invalid Student ID. Enter your own student ID.", "studentId");
+  }
+  if (!student.lecturerId || !student.lecturer) {
+    throw new BookingError("no-lecturer", "You don't have an assigned lecturer yet. Please contact the admin office.");
+  }
+  const lecturerId = student.lecturerId;
+  const lecturerName = student.lecturer.user.name;
+
+  try {
+    return await prisma.$transaction(async (tx) => {
+      // executeRaw: the lock function returns void, which $queryRaw cannot deserialize.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`booking:${lecturerId}`}))`;
+
+      const slot = await tx.availabilitySlot.findUnique({ where: { id: input.slotId } });
+      if (!slot || slot.lecturerId !== lecturerId) {
+        throw new BookingError("slot-not-found", "That slot is not one of your lecturer's slots. Please choose again.", "slotId");
+      }
+      if (slot.slotStatus !== "AVAILABLE") {
+        throw new BookingError("slot-taken", "Sorry, that slot has just been taken. Please choose another slot.", "slotId");
+      }
+      const startsAt = slotStartsAt(slot.slotDate, slot.startTime);
+      if (startsAt <= now) {
+        throw new BookingError("slot-past", "That slot has already started. Please choose a later one.", "slotId");
+      }
+
+      await checkConsultationLimit(tx, { lecturerId, lecturerName, studentId: student.studentId, slotDate: slot.slotDate, startsAt, now });
+
+      const appointment = await tx.appointment.create({
+        data: { studentId: student.studentId, lecturerId, slotId: slot.id, purpose: input.purpose, status: "PENDING" },
+        select: { id: true },
+      });
+
+      const claimed = await tx.availabilitySlot.updateMany({
+        where: { id: slot.id, slotStatus: "AVAILABLE" },
+        data: { slotStatus: "BOOKED" },
+      });
+      if (claimed.count !== 1) {
+        throw new BookingError("slot-taken", "Sorry, that slot has just been taken. Please choose another slot.", "slotId");
+      }
+      return appointment;
+    });
+  } catch (error) {
+    // The partial unique index caught a double booking that slipped past everything else.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      throw new BookingError("slot-taken", "Sorry, that slot has just been taken. Please choose another slot.", "slotId");
+    }
+    throw error;
+  }
+}

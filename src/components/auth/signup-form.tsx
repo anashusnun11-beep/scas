@@ -7,7 +7,7 @@ import { Field, Input } from "@/components/ui/field";
 import { parseStudentId, STUDENT_ID_EXAMPLE, type ParsedStudentId } from "@/lib/student-id";
 import { fieldErrors, signupSchema, type FieldErrors, type SignupInput } from "@/lib/validation/auth";
 import { signUpAction } from "@/server/actions/auth";
-import { FormMessage } from "./form-message";
+import { FormMessage } from "@/components/ui/form-message";
 import { PasswordInput } from "./password-input";
 
 /** FR01: students register themselves. Lecturers and admins are created by the admin. */
@@ -34,7 +34,7 @@ export function SignupForm() {
     startTransition(async () => {
       const result = await signUpAction(data);
       if (result.ok) {
-        router.push(result.redirectTo);
+        router.push(result.redirectTo ?? "/login");
         return;
       }
       setErrors(result.errors);
@@ -43,7 +43,7 @@ export function SignupForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="grid gap-5">
+    <form method="post" onSubmit={onSubmit} noValidate className="grid gap-5">
       {message && <FormMessage tone="error">{message}</FormMessage>}
 
       <Field id="signup-name" label="Full name" required error={errors.name}>

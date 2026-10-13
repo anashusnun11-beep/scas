@@ -125,11 +125,11 @@ export function AppShell({
   }, [menuOpen]);
 
   return (
-    <div className="min-h-dvh bg-canvas text-ink lg:pl-(--sidebar-width)">
+    <div className="min-h-dvh bg-canvas text-ink lg:pl-(--sidebar-width) print:bg-white print:pl-0">
       {/* desktop sidebar */}
       <aside
         data-theme="dark"
-        className="fixed inset-y-0 left-0 z-(--z-sidebar) hidden w-(--sidebar-width) border-r border-line bg-canvas text-ink lg:block"
+        className="fixed inset-y-0 left-0 z-(--z-sidebar) hidden w-(--sidebar-width) border-r border-line bg-canvas text-ink lg:block print:hidden"
       >
         <SidebarContent role={role} footer={footer} />
       </aside>
@@ -168,7 +168,7 @@ export function AppShell({
         )}
       </AnimatePresence>
 
-      <header className="sticky top-0 z-(--z-sticky) flex h-(--topbar-height) items-center gap-2 border-b border-line bg-canvas/85 px-4 backdrop-blur lg:px-8">
+      <header className="sticky top-0 z-(--z-sticky) flex h-(--topbar-height) items-center gap-2 border-b border-line bg-canvas/85 px-4 backdrop-blur lg:px-8 print:hidden">
         <button
           type="button"
           onClick={() => setMenuOpen(true)}
@@ -195,7 +195,7 @@ export function AppShell({
       </header>
 
       {/* key restarts the CSS enter animation on every route change */}
-      <main key={pathname} className="mx-auto w-full max-w-6xl animate-page-enter px-4 py-6 lg:px-8 lg:py-8">
+      <main key={pathname} className="mx-auto w-full max-w-6xl animate-page-enter px-4 py-6 lg:px-8 lg:py-8 print:max-w-none print:animate-none print:p-0">
         {children}
       </main>
     </div>

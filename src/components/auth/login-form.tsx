@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { fieldErrors, loginSchema, type FieldErrors, type LoginInput } from "@/lib/validation/auth";
 import { loginAction } from "@/server/actions/auth";
-import { FormMessage } from "./form-message";
+import { FormMessage } from "@/components/ui/form-message";
 import { PasswordInput } from "./password-input";
 
 // How long the door gets to open before we leave the page. Short on purpose: the form stays fast.
@@ -49,14 +49,14 @@ export function LoginForm({ callbackUrl, notice }: { callbackUrl?: string; notic
       // Knock answered: the sign flips to MASUK, the door opens, then into the dashboard.
       setEntering(true);
       openDoor();
-      window.setTimeout(() => router.replace(result.redirectTo), reduce ? 0 : DOOR_BEAT_MS);
+      window.setTimeout(() => router.replace(result.redirectTo ?? "/dashboard"), reduce ? 0 : DOOR_BEAT_MS);
     });
   }
 
   const busy = pending || entering;
 
   return (
-    <form onSubmit={onSubmit} noValidate className="grid gap-5">
+    <form method="post" onSubmit={onSubmit} noValidate className="grid gap-5">
       {message ? (
         <FormMessage tone="error">{message}</FormMessage>
       ) : notice ? (

@@ -171,8 +171,54 @@ async function main() {
     });
   }
 
+  // Sample appointments for Aina (module 3 testing): one COMPLETED with notes and one REJECTED last
+  // week (history), one APPROVED next week (status + printable slip). Kavitha and Wei Jie stay empty.
+  const dayMs = 24 * 60 * 60 * 1000;
+  const lastWeekTue = new Date(weekdays[1].getTime() - 14 * dayMs); // the week before this one: always in the past
+  const lastWeekThu = new Date(weekdays[3].getTime() - 14 * dayMs);
+  const past = (slotDate: Date) =>
+    prisma.availabilitySlot.create({
+      data: { lecturerId: "LEC001", slotDate, startTime: time("10:00"), endTime: time("10:30"), location: "Room B2.14" },
+    });
+  const [completedSlot, rejectedSlot] = [await past(lastWeekTue), await past(lastWeekThu)];
+
+  await prisma.appointment.create({
+    data: {
+      studentId: "BCS2403-001",
+      lecturerId: "LEC001",
+      slotId: completedSlot.id,
+      purpose: "Final year project proposal discussion",
+      status: "COMPLETED",
+      note: {
+        create: {
+          notes: "Went through the proposal and the three user roles. Scope is right for a diploma project; booking rules need to be written down clearly.",
+          actionPlan: "1) Update the SRS and SDD. 2) Build the booking module prototype before the next consultation.",
+        },
+      },
+    },
+  });
+  await prisma.appointment.create({
+    data: {
+      studentId: "BCS2403-001",
+      lecturerId: "LEC001",
+      slotId: rejectedSlot.id,
+      purpose: "Ask about the internship placement letter",
+      status: "REJECTED",
+      remarks: "I am at a faculty meeting at this time. Please book a slot next week.",
+    },
+  });
+  // Next week's Wednesday slot for Dr. Nurul Huda: approved, so the slot is BOOKED.
+  const approvedSlot = await prisma.availabilitySlot.findFirstOrThrow({ where: { lecturerId: "LEC001", slotDate: weekdays[2] } });
+  await prisma.$transaction([
+    prisma.appointment.create({
+      data: { studentId: "BCS2403-001", lecturerId: "LEC001", slotId: approvedSlot.id, purpose: "Review chapter 3 of the project report", status: "APPROVED" },
+    }),
+    prisma.availabilitySlot.update({ where: { id: approvedSlot.id }, data: { slotStatus: "BOOKED" } }),
+  ]);
+
   const fmt = (d: Date) => d.toISOString().slice(0, 10);
   console.log(`\nSeeded slots for ${fmt(weekdays[0])} to ${fmt(weekdays[4])} (Mon-Fri, ${TIME_ZONE}).`);
+  console.log(`Aina's sample appointments: COMPLETED ${fmt(lastWeekTue)}, REJECTED ${fmt(lastWeekThu)}, APPROVED ${fmt(weekdays[2])}.`);
   console.log(`\nSeed logins (password for all: ${DEMO_PASSWORD})`);
   console.table([
     { role: "ADMIN", email: "admin@scas.test", id: "ADM001" },

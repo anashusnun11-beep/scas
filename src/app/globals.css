@@ -242,6 +242,13 @@ body:has([data-stage]) {
   animation: flap-in var(--flap-tick) linear;
 }
 
+/* Printing (slip, report): white paper, no app chrome. */
+@media print {
+  body {
+    background: #ffffff;
+  }
+}
+
 /* Global safety net. Components also check prefers-reduced-motion themselves. */
 @media (prefers-reduced-motion: reduce) {
   *,

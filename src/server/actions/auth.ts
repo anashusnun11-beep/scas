@@ -3,6 +3,7 @@
 import { Prisma } from "@/generated/prisma/client";
 import { AuthError, CredentialsSignin } from "next-auth";
 import { signIn, signOut } from "@/auth";
+import type { ActionResult } from "@/lib/action-result";
 import { hashPassword } from "@/lib/auth/password";
 import { roleHome } from "@/lib/navigation";
 import { parseStudentId } from "@/lib/student-id";
@@ -11,10 +12,6 @@ import { prisma } from "@/server/db";
 
 // AuthController (SDD): signUp, login, logout. These are the only server actions that run before
 // a session exists, so they are the only ones without requireRole().
-
-export type ActionResult<T> =
-  | { ok: true; redirectTo: string }
-  | { ok: false; errors: FieldErrors<T>; message?: string };
 
 /** FR01 / SD1 steps 2-9: validate, reject duplicates, hash, insert. Students only. */
 export async function signUpAction(formData: FormData): Promise<ActionResult<SignupInput>> {
