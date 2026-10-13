@@ -5,6 +5,7 @@ import { AuthError, CredentialsSignin } from "next-auth";
 import { signIn, signOut } from "@/auth";
 import { hashPassword } from "@/lib/auth/password";
 import { roleHome } from "@/lib/navigation";
+import { parseStudentId } from "@/lib/student-id";
 import { fieldErrors, loginSchema, signupSchema, type FieldErrors, type LoginInput, type SignupInput } from "@/lib/validation/auth";
 import { prisma } from "@/server/db";
 
@@ -38,8 +39,8 @@ export async function signUpAction(formData: FormData): Promise<ActionResult<Sig
         email,
         passwordHash,
         role: "STUDENT",
-        // The admin assigns a lecturer later (FR14).
-        student: { create: { studentId } },
+        // Programme comes from the code in the ID (BCS, BDA, BDB, BLH). The admin assigns a lecturer later (FR14).
+        student: { create: { studentId, programme: parseStudentId(studentId)?.programme } },
       },
     });
   } catch (error) {

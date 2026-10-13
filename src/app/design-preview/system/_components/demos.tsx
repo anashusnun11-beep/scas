@@ -139,8 +139,8 @@ export function FormDemo() {
 
   return (
     <form onSubmit={onSubmit} noValidate className="grid gap-5 md:grid-cols-2">
-      <Field id="demo-student-id" label="Student ID" required hint="The ID on your matric card.">
-        <Input name="studentId" defaultValue="2023110987" inputMode="numeric" />
+      <Field id="demo-student-id" label="Student ID" required hint="Example: BCS2403-019.">
+        <Input name="studentId" defaultValue="BCS2403-001" autoCapitalize="characters" />
       </Field>
       <Field id="demo-slot" label="Slot" required>
         <Select name="slot" defaultValue="1">

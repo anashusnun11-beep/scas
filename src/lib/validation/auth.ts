@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { studentIdSchema } from "./student-id";
 
 // Shared by the forms (client) and the server actions / Auth.js authorize (server).
 
@@ -14,13 +15,6 @@ export const loginSchema = z.object({
   email,
   password: z.string().min(1, "Enter your password.").max(72, "Password must be 72 characters or fewer."),
 });
-
-/** Student ID: letters and digits, 5 to 20 characters, stored in uppercase (decision 2026-10-14). */
-export const studentIdSchema = z
-  .string()
-  .trim()
-  .toUpperCase()
-  .regex(/^[A-Z0-9]{5,20}$/, "Student ID must be 5 to 20 letters or digits, with no spaces.");
 
 /** At least 8 characters with a letter and a number. 72 is bcrypt's input limit. */
 export const passwordSchema = z

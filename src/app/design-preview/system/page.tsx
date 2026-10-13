@@ -136,7 +136,7 @@ export default function DesignSystemPage() {
             </div>
             <div className="grid gap-1 md:grid-cols-[10rem_1fr] md:items-baseline">
               <span className="font-mono text-xs text-muted">mono</span>
-              <p className="font-mono">APT-0012 2023110987 10:00 - 10:30</p>
+              <p className="font-mono">APT-0012 BCS2403-001 10:00 - 10:30</p>
             </div>
           </div>
         </Section>

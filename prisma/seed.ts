@@ -4,6 +4,13 @@ import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
+import { parseStudentId } from "../src/lib/student-id";
+
+function programmeOf(studentId: string) {
+  const parsed = parseStudentId(studentId);
+  if (!parsed) throw new Error(`Seed student ID ${studentId} does not match the KPMB format`);
+  return parsed.programme;
+}
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
@@ -94,7 +101,7 @@ async function main() {
       name: "En. Hafiz bin Rahim",
       email: "hafiz@scas.test",
       phoneNo: "03-8925 1305",
-      department: "Information Systems",
+      department: "Accounting",
       officeRoom: "Block B, Level 3, Room 3.05",
       position: "Lecturer",
       location: "Room B3.05",
@@ -135,20 +142,20 @@ async function main() {
     });
   }
 
+  // KPMB student ID format <CODE><YY><INTAKE>-<NNN>; programme comes from the code (src/lib/student-id.ts).
   const students = [
-    { studentId: "2023110987", name: "Aina Sofea binti Rahman", email: "aina@scas.test", programme: "Diploma in Computer Science", lecturerId: "LEC001" },
-    { studentId: "2022098812", name: "Kavitha a/p Raman", email: "kavitha@scas.test", programme: "Diploma in Computer Science", lecturerId: "LEC001" },
-    { studentId: "2023104421", name: "Lim Wei Jie", email: "weijie@scas.test", programme: "Diploma in Information Systems", lecturerId: "LEC002" },
+    { studentId: "BCS2403-001", name: "Aina Sofea binti Rahman", email: "aina@scas.test", lecturerId: "LEC001" },
+    { studentId: "BCS2402-015", name: "Kavitha a/p Raman", email: "kavitha@scas.test", lecturerId: "LEC001" },
+    { studentId: "BDA2401-007", name: "Lim Wei Jie", email: "weijie@scas.test", lecturerId: "LEC002" },
     // Deactivated account, to test that INACTIVE users cannot log in (BR8, module 2).
-    { studentId: "2022087765", name: "Nur Iman binti Zulkifli", email: "iman@scas.test", programme: "Diploma in Computer Science", lecturerId: "LEC002", inactive: true },
+    { studentId: "BDB2401-031", name: "Nur Iman binti Zulkifli", email: "iman@scas.test", lecturerId: "LEC002", inactive: true },
   ];
 
   for (const s of students) {
     await prisma.student.create({
       data: {
         studentId: s.studentId,
-        programme: s.programme,
-        faculty: "Faculty of Computing",
+        programme: programmeOf(s.studentId),
         semester: 4,
         lecturer: { connect: { lecturerId: s.lecturerId } },
         user: {
@@ -170,7 +177,7 @@ async function main() {
   console.table([
     { role: "ADMIN", email: "admin@scas.test", id: "ADM001" },
     ...lecturers.map((l) => ({ role: "LECTURER", email: l.email, id: l.lecturerId })),
-    ...students.map((s) => ({ role: s.inactive ? "STUDENT (INACTIVE)" : "STUDENT", email: s.email, id: s.studentId })),
+    ...students.map((s) => ({ role: s.inactive ? "STUDENT (INACTIVE)" : "STUDENT", email: s.email, id: s.studentId, programme: programmeOf(s.studentId) })),
   ]);
 }
 

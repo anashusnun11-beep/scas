@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
+import { parseStudentId, STUDENT_ID_EXAMPLE, type ParsedStudentId } from "@/lib/student-id";
 import { fieldErrors, signupSchema, type FieldErrors, type SignupInput } from "@/lib/validation/auth";
 import { signUpAction } from "@/server/actions/auth";
 import { FormMessage } from "./form-message";
@@ -15,6 +16,7 @@ export function SignupForm() {
   const [pending, startTransition] = useTransition();
   const [errors, setErrors] = useState<FieldErrors<SignupInput>>({});
   const [message, setMessage] = useState<string>();
+  const [studentId, setStudentId] = useState<ParsedStudentId | null>(null);
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -50,8 +52,34 @@ export function SignupForm() {
       <Field id="signup-email" label="E-mail" required error={errors.email}>
         <Input name="email" type="email" autoComplete="email" inputMode="email" />
       </Field>
-      <Field id="signup-student-id" label="Student ID" required error={errors.studentId} hint="Letters and digits only, as on your matric card.">
-        <Input name="studentId" autoComplete="off" autoCapitalize="characters" spellCheck={false} />
+      <Field
+        id="signup-student-id"
+        label="Student ID"
+        required
+        error={errors.studentId}
+        hint={
+          // One persistent live region: screen readers hear the programme as soon as the ID is valid.
+          <span aria-live="polite" className={studentId ? "font-medium text-success" : undefined}>
+            {studentId
+              ? `${studentId.programme}, ${studentId.intakeYear} intake ${String(studentId.intake).padStart(2, "0")}`
+              : `Example: ${STUDENT_ID_EXAMPLE}. Your programme is filled in from the ID.`}
+          </span>
+        }
+      >
+        <Input
+          name="studentId"
+          placeholder={STUDENT_ID_EXAMPLE}
+          autoComplete="off"
+          autoCapitalize="characters"
+          spellCheck={false}
+          maxLength={20}
+          onChange={(e) => {
+            const parsed = parseStudentId(e.target.value);
+            setStudentId(parsed);
+            // A now-valid ID must not keep the red error from the last submit next to the green programme.
+            if (parsed) setErrors((current) => ({ ...current, studentId: undefined }));
+          }}
+        />
       </Field>
       <div className="grid gap-5 sm:grid-cols-2">
         <Field id="signup-password" label="Password" required error={errors.password} hint="8 or more characters, with a letter and a number.">
