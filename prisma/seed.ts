@@ -139,6 +139,8 @@ async function main() {
     { studentId: "2023110987", name: "Aina Sofea binti Rahman", email: "aina@scas.test", programme: "Diploma in Computer Science", lecturerId: "LEC001" },
     { studentId: "2022098812", name: "Kavitha a/p Raman", email: "kavitha@scas.test", programme: "Diploma in Computer Science", lecturerId: "LEC001" },
     { studentId: "2023104421", name: "Lim Wei Jie", email: "weijie@scas.test", programme: "Diploma in Information Systems", lecturerId: "LEC002" },
+    // Deactivated account, to test that INACTIVE users cannot log in (BR8, module 2).
+    { studentId: "2022087765", name: "Nur Iman binti Zulkifli", email: "iman@scas.test", programme: "Diploma in Computer Science", lecturerId: "LEC002", inactive: true },
   ];
 
   for (const s of students) {
@@ -155,6 +157,7 @@ async function main() {
             email: s.email,
             passwordHash,
             role: "STUDENT",
+            accountStatus: s.inactive ? "INACTIVE" : "ACTIVE",
           },
         },
       },
@@ -167,7 +170,7 @@ async function main() {
   console.table([
     { role: "ADMIN", email: "admin@scas.test", id: "ADM001" },
     ...lecturers.map((l) => ({ role: "LECTURER", email: l.email, id: l.lecturerId })),
-    ...students.map((s) => ({ role: "STUDENT", email: s.email, id: s.studentId })),
+    ...students.map((s) => ({ role: s.inactive ? "STUDENT (INACTIVE)" : "STUDENT", email: s.email, id: s.studentId })),
   ]);
 }
 

@@ -45,6 +45,13 @@ export const navigation: Record<Role, NavItem[]> = {
   ],
 };
 
+/** Where each role lands after login (FR02). */
+export const roleHome: Record<Role, string> = {
+  STUDENT: "/student",
+  LECTURER: "/lecturer",
+  ADMIN: "/admin",
+};
+
 export const roleLabel: Record<Role, string> = {
   STUDENT: "Student",
   LECTURER: "Lecturer",

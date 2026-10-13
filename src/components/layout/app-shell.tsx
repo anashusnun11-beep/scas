@@ -106,13 +106,16 @@ export function AppShell({
 }: {
   role: Role;
   user: { name: string };
-  title: string;
+  /** Defaults to the label of the active menu item. */
+  title?: string;
   /** Bottom of the sidebar, e.g. the logout form (module 2). */
   footer?: ReactNode;
   children: ReactNode;
 }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const items = navigation[role];
+  const pageTitle = title ?? items.find((i) => isActive(pathname, i.href, items[0].href))?.label ?? "SCAS";
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -175,7 +178,7 @@ export function AppShell({
         >
           <ListIcon aria-hidden className="size-5" />
         </button>
-        <h1 className="min-w-0 flex-1 truncate font-display text-heading font-semibold">{title}</h1>
+        <h1 className="min-w-0 flex-1 truncate font-display text-heading font-semibold">{pageTitle}</h1>
         <ThemeToggle />
         <div className="flex items-center gap-3 pl-1">
           <div className="hidden text-right leading-tight sm:block">

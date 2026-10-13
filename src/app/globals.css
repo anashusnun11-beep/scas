@@ -121,6 +121,19 @@
   --flap-cell-ink: var(--ink-50);
   --logo-plate: var(--navy-0); /* the logo needs a light plate in every theme */
 
+  /* Stage door (login, landing). Read by the CSS door and by the 3D scene. */
+  --door-wood-light: #4a3020;
+  --door-wood: #3a2618;
+  --door-wood-dark: #2a1b10;
+  --door-edge: #1f140c;
+  --door-frame: var(--navy-850);
+  --door-wall: var(--navy-900);
+  --door-floor: var(--navy-950);
+  --door-handle: #d9c7a3;
+  --lamp-core: var(--amber-200);
+  --lamp: var(--amber-400);
+  --lamp-deep: #b8691c;
+
   /* z-index scale: only these layers exist */
   --z-sticky: 20;
   --z-sidebar: 30;
@@ -193,6 +206,11 @@ body {
   color: var(--ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Dark stage pages (login, landing): the body matches, so overscroll never flashes light. */
+body:has([data-stage]) {
+  background: var(--navy-950);
 }
 
 :focus-visible {
