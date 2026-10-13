@@ -1,26 +1,237 @@
 @import "tailwindcss";
 
+/*
+ * SCAS design tokens (direction: Lampu Pejabat). See DESIGN.md.
+ * Three layers: primitive (raw values) -> semantic (purpose, swaps per theme) -> component.
+ * Components only use semantic/component tokens, never primitives or raw hex.
+ */
+
+/* `dark:` follows the data-theme attribute, so a subtree can force a theme
+   (the sidebar is always dark, landing and login are always dark). */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ---------- 1. Primitive tokens ---------- */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Night navy */
+  --navy-950: #0a0d1a;
+  --navy-900: #121731;
+  --navy-850: #1a2042;
+  --navy-800: #262d52;
+  --navy-700: #3b4475;
+  --navy-400: #9aa1be;
+  --navy-300: #c3c7d9;
+  --navy-200: #d9dae4;
+  --navy-100: #e8e8f0;
+  --navy-50: #f3f3f7;
+  --navy-0: #fdfdfe;
+  --ink-900: #12162b;
+  --ink-600: #545a73;
+  --ink-50: #eef0f7;
+
+  /* Lamp amber */
+  --amber-200: #ffe2b0;
+  --amber-300: #ffcf85;
+  --amber-400: #ffb547;
+  --amber-500: #f5a524;
+  --amber-600: #e0921a;
+  --amber-700: #9a5b00;
+  --amber-800: #7a4700;
+  --amber-950: #1a1206;
+
+  /* Signal colours (door sign, feedback) */
+  --red-300: #f87171;
+  --red-400: #f0525a;
+  --red-600: #c8202a;
+  --red-700: #b42318;
+  --green-400: #3dd68c;
+  --green-600: #1b7a43;
 }
 
+/* ---------- 2. Semantic tokens: light (app default) ---------- */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+  --canvas: var(--navy-50);
+  --surface: var(--navy-0);
+  --surface-2: var(--navy-100);
+  --ink: var(--ink-900);
+  --muted: var(--ink-600);
+  --line: var(--navy-200);
+  --line-strong: var(--navy-300);
+  --primary: var(--amber-500);
+  --primary-hover: var(--amber-600);
+  --on-primary: var(--amber-950);
+  --accent-ink: var(--amber-800); /* amber that is readable as text on light surfaces */
+  --focus: var(--amber-700);
+  --danger: var(--red-700);
+  --on-danger: #ffffff;
+  --success: var(--green-600);
+  --sign-stop: var(--red-600);
+  --sign-go: var(--green-600);
+  --scrim: rgb(10 13 26 / 0.5);
+  --shadow-tint: 18 22 43;
+
+  /* Appointment status (spec section 10): text colour, badge tint is derived. */
+  --st-pending: #8a5100;
+  --st-approved: #17693a;
+  --st-rejected: #b42318;
+  --st-rescheduled: #4338ca;
+  --st-cancelled: #5b6170;
+  --st-completed: #0b6378;
+}
+
+/* ---------- 2b. Semantic tokens: dark (landing, login, sidebar, opt-in for the app) ---------- */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --canvas: var(--navy-950);
+  --surface: var(--navy-900);
+  --surface-2: var(--navy-850);
+  --ink: var(--ink-50);
+  --muted: var(--navy-400);
+  --line: var(--navy-800);
+  --line-strong: var(--navy-700);
+  --primary: var(--amber-400);
+  --primary-hover: var(--amber-300);
+  --on-primary: var(--amber-950);
+  --accent-ink: var(--amber-300);
+  --focus: var(--amber-300);
+  --danger: var(--red-300);
+  --on-danger: #1a0606;
+  --success: var(--green-400);
+  --sign-stop: var(--red-400);
+  --sign-go: var(--green-400);
+  --scrim: rgb(0 0 0 / 0.6);
+  --shadow-tint: 0 0 0;
+
+  --st-pending: #f5b544;
+  --st-approved: #4ade80;
+  --st-rejected: #f87171;
+  --st-rescheduled: #a5b4fc;
+  --st-cancelled: #a1a1aa;
+  --st-completed: #67e8f9;
+}
+
+/* ---------- 3. Component tokens ---------- */
+:root {
+  --sidebar-width: 16rem;
+  --topbar-height: 4rem;
+  --control-height: 2.75rem; /* 44px: minimum touch target */
+  --flap-tick: 60ms;
+  --flap-cell-bg: var(--navy-850);
+  --flap-cell-ink: var(--ink-50);
+  --logo-plate: var(--navy-0); /* the logo needs a light plate in every theme */
+
+  /* z-index scale: only these layers exist */
+  --z-sticky: 20;
+  --z-sidebar: 30;
+  --z-overlay: 40;
+  --z-drawer: 50;
+  --z-toast: 60;
+}
+
+/* ---------- Tailwind theme mapping ---------- */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-on-primary: var(--on-primary);
+  --color-accent-ink: var(--accent-ink);
+  --color-focus: var(--focus);
+  --color-danger: var(--danger);
+  --color-on-danger: var(--on-danger);
+  --color-success: var(--success);
+  --color-sign-stop: var(--sign-stop);
+  --color-sign-go: var(--sign-go);
+
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@theme {
+  /* Type scale (body stays on Tailwind's text-base / text-sm / text-xs) */
+  --text-display: 3.75rem;
+  --text-display--line-height: 1.05;
+  --text-display--letter-spacing: -0.02em;
+  --text-title: 1.875rem;
+  --text-title--line-height: 1.2;
+  --text-title--letter-spacing: -0.01em;
+  --text-heading: 1.25rem;
+  --text-heading--line-height: 1.3;
+  --text-subheading: 1.0625rem;
+  --text-subheading--line-height: 1.4;
+
+  /* Shape lock: cards 16, controls 12, chips/badges 8. Nothing else. */
+  --radius-card: 16px;
+  --radius-control: 12px;
+  --radius-chip: 8px;
+
+  --shadow-card: 0 1px 2px rgb(var(--shadow-tint) / 0.06), 0 6px 20px -8px rgb(var(--shadow-tint) / 0.12);
+  --shadow-float: 0 12px 40px -12px rgb(var(--shadow-tint) / 0.35);
+
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Page enter inside the AppShell. CSS, not JS: content is visible even before hydration. */
+  --animate-page-enter: page-enter 180ms var(--ease-out-soft) both;
+  @keyframes page-enter {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
   }
 }
 
+/* ---------- Base ---------- */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Status badge: tint derived from the status colour so every status follows one rule. */
+.status-badge {
+  color: var(--st);
+  background: color-mix(in oklab, var(--st) 13%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--st) 28%, transparent);
+}
+
+/* Split-flap: a cell flips in from the top half, one tick long. */
+@keyframes flap-in {
+  from {
+    transform: rotateX(-90deg);
+  }
+  to {
+    transform: rotateX(0deg);
+  }
+}
+.flap-cell {
+  display: inline-block;
+  transform-origin: 50% 50%;
+}
+.flap-cell[data-flipping] {
+  animation: flap-in var(--flap-tick) linear;
+}
+
+/* Global safety net. Components also check prefers-reduced-motion themselves. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
