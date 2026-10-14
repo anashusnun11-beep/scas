@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PhoneForm } from "@/components/student/phone-form";
+import { PhoneForm } from "@/components/profile/phone-form";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { requireRole } from "@/lib/auth/guard";
 import { getAssignedLecturer } from "@/server/queries/student";
@@ -38,7 +38,7 @@ export default async function ProfilePage() {
       <Card>
         <CardHeader title="Contact" />
         <CardBody>
-          <PhoneForm phoneNo={student?.user.phoneNo ?? null} />
+          <PhoneForm phoneNo={student?.user.phoneNo ?? null} hint="Your lecturer may call you about an appointment." />
         </CardBody>
       </Card>
     </div>

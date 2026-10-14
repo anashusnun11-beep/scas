@@ -216,8 +216,26 @@ async function main() {
     prisma.availabilitySlot.update({ where: { id: approvedSlot.id }, data: { slotStatus: "BOOKED" } }),
   ]);
 
+  // Module 4 testing for Dr. Nurul Huda: two PENDING requests next week (Kavitha Mon, Aina Thu) and an
+  // APPROVED consultation two days ago that still needs notes.
+  const book = async (studentId: string, slotDate: Date, purpose: string, status: "PENDING" | "APPROVED") => {
+    const slot = await prisma.availabilitySlot.findFirstOrThrow({ where: { lecturerId: "LEC001", slotDate } });
+    await prisma.$transaction([
+      prisma.appointment.create({ data: { studentId, lecturerId: "LEC001", slotId: slot.id, purpose, status } }),
+      prisma.availabilitySlot.update({ where: { id: slot.id }, data: { slotStatus: "BOOKED" } }),
+    ]);
+  };
+  await book("BCS2402-015", weekdays[0], "Ask about changing my final year project title", "PENDING");
+  await book("BCS2403-001", weekdays[3], "Get feedback on my system architecture diagram", "PENDING");
+  const twoDaysAgo = new Date(todayInMalaysia().getTime() - 2 * dayMs);
+  await prisma.availabilitySlot.create({
+    data: { lecturerId: "LEC001", slotDate: twoDaysAgo, startTime: time("11:00"), endTime: time("11:30"), location: "Room B2.14" },
+  });
+  await book("BCS2402-015", twoDaysAgo, "Discuss my internship logbook", "APPROVED");
+
   const fmt = (d: Date) => d.toISOString().slice(0, 10);
   console.log(`\nSeeded slots for ${fmt(weekdays[0])} to ${fmt(weekdays[4])} (Mon-Fri, ${TIME_ZONE}).`);
+  console.log(`Dr. Nurul Huda: PENDING ${fmt(weekdays[0])} (Kavitha) and ${fmt(weekdays[3])} (Aina); APPROVED ${fmt(twoDaysAgo)} awaiting notes (Kavitha).`);
   console.log(`Aina's sample appointments: COMPLETED ${fmt(lastWeekTue)}, REJECTED ${fmt(lastWeekThu)}, APPROVED ${fmt(weekdays[2])}.`);
   console.log(`\nSeed logins (password for all: ${DEMO_PASSWORD})`);
   console.table([

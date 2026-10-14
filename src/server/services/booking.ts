@@ -1,7 +1,9 @@
 import { Prisma } from "@/generated/prisma/client";
 import { LIMIT_STATUSES } from "@/lib/appointment";
 import { formatSlotDate, slotStartsAt, weekRange } from "@/lib/dates";
+import { DEFAULT_LIMIT } from "@/lib/limits";
 import { prisma } from "@/server/db";
+import { LOCKED_TX, lockLecturer } from "./locks";
 
 type Tx = Prisma.TransactionClient;
 
@@ -42,8 +44,9 @@ type LimitCheck = {
  * Skipped entirely when the lecturer has switched limits off.
  */
 export async function checkConsultationLimit(tx: Tx, c: LimitCheck) {
-  const limit = await tx.consultationLimit.findUnique({ where: { lecturerId: c.lecturerId } });
-  if (!limit || !limit.isEnabled) return;
+  // No saved settings yet means the defaults apply, the same values the lecturer sees on the limits page.
+  const limit = (await tx.consultationLimit.findUnique({ where: { lecturerId: c.lecturerId } })) ?? DEFAULT_LIMIT;
+  if (!limit.isEnabled) return;
 
   const hoursAhead = (c.startsAt.getTime() - c.now.getTime()) / 3_600_000;
   if (hoursAhead < limit.minNoticeHours) {
@@ -110,8 +113,7 @@ export async function submitBooking(input: { userId: number; studentIdInput: str
 
   try {
     return await prisma.$transaction(async (tx) => {
-      // executeRaw: the lock function returns void, which $queryRaw cannot deserialize.
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`booking:${lecturerId}`}))`;
+      await lockLecturer(tx, lecturerId);
 
       const slot = await tx.availabilitySlot.findUnique({ where: { id: input.slotId } });
       if (!slot || slot.lecturerId !== lecturerId) {
@@ -140,7 +142,7 @@ export async function submitBooking(input: { userId: number; studentIdInput: str
         throw new BookingError("slot-taken", "Sorry, that slot has just been taken. Please choose another slot.", "slotId");
       }
       return appointment;
-    });
+    }, LOCKED_TX);
   } catch (error) {
     // The partial unique index caught a double booking that slipped past everything else.
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {

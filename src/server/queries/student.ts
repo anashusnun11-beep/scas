@@ -1,5 +1,6 @@
 import { ACTIVE_STATUSES } from "@/lib/appointment";
 import { addDays, malaysiaToday, slotStartsAt } from "@/lib/dates";
+import { DEFAULT_LIMIT } from "@/lib/limits";
 import { prisma } from "@/server/db";
 
 // Read side of the student module. Names follow the SDD controllers:
@@ -67,7 +68,8 @@ export async function getAvailableSlots(
     select: { id: true, slotDate: true, startTime: true, endTime: true, location: true, slotStatus: true },
   });
 
-  const noticeMs = limit?.isEnabled ? limit.minNoticeHours * 60 * 60 * 1000 : 0;
+  const effective = limit ?? DEFAULT_LIMIT;
+  const noticeMs = effective.isEnabled ? effective.minNoticeHours * 60 * 60 * 1000 : 0;
   return slots
     .filter((s) => slotStartsAt(s.slotDate, s.startTime) > now)
     .map((s) => {
@@ -80,7 +82,7 @@ export async function getAvailableSlots(
         endTime: s.endTime,
         location: s.location,
         status: s.slotStatus as "AVAILABLE" | "BOOKED",
-        closedReason: tooSoon ? `Bookings close ${limit?.minNoticeHours} hours before` : undefined,
+        closedReason: tooSoon ? `Bookings close ${effective.minNoticeHours} hours before` : undefined,
       };
     });
 }

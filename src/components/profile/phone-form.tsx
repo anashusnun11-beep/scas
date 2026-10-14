@@ -9,7 +9,7 @@ import { phoneSchema, type PhoneInput } from "@/lib/validation/profile";
 import { updatePhoneAction } from "@/server/actions/profile";
 
 /** Profile: update your own phone number. */
-export function PhoneForm({ phoneNo }: { phoneNo: string | null }) {
+export function PhoneForm({ phoneNo, hint = "Used if someone needs to reach you about an appointment." }: { phoneNo: string | null; hint?: string }) {
   const { toast } = useToast();
   const [pending, startTransition] = useTransition();
   const [errors, setErrors] = useState<FieldErrors<PhoneInput>>({});
@@ -32,7 +32,7 @@ export function PhoneForm({ phoneNo }: { phoneNo: string | null }) {
 
   return (
     <form method="post" onSubmit={onSubmit} noValidate className="grid gap-4 sm:grid-cols-[minmax(0,20rem)_auto] sm:items-start">
-      <Field id="profile-phone" label="Phone number" error={errors.phoneNo} hint="Your lecturer may call you about an appointment.">
+      <Field id="profile-phone" label="Phone number" error={errors.phoneNo} hint={hint}>
         <Input name="phoneNo" type="tel" inputMode="tel" autoComplete="tel" defaultValue={phoneNo ?? ""} />
       </Field>
       <Button type="submit" loading={pending} className="sm:mt-7">

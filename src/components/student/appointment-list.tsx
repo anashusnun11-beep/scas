@@ -4,6 +4,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { appointmentCode, remarksLabel } from "@/lib/appointment";
 import { formatSlotDate, formatTimeRange } from "@/lib/dates";
 import type { AppointmentRow } from "@/server/queries/student";
+import { studentAppointmentPath } from "./appointment-view";
 
 /** FR06 / FR08: one row per appointment, colour-coded status and remarks; opens the detail page. */
 export function AppointmentList({ appointments }: { appointments: AppointmentRow[] }) {
@@ -12,7 +13,7 @@ export function AppointmentList({ appointments }: { appointments: AppointmentRow
       {appointments.map((a) => (
         <li key={a.id}>
           <Link
-            href={`/student/appointments/${a.id}`}
+            href={studentAppointmentPath(a.slot.slotDate, a.id)}
             className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1 px-5 py-4 transition-colors duration-150 hover:bg-surface-2/60"
           >
             <div className="min-w-0">

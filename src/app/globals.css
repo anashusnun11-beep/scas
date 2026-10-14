@@ -242,6 +242,25 @@ body:has([data-stage]) {
   animation: flap-in var(--flap-tick) linear;
 }
 
+/* Dialog entrance: short rise and fade (app lane). The global reduced-motion rule makes it instant. */
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+.scas-dialog[open] {
+  animation: dialog-in 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.scas-dialog[open]::backdrop {
+  animation: backdrop-in 180ms ease-out;
+}
+
 /* Printing (slip, report): white paper, no app chrome. */
 @media print {
   body {
