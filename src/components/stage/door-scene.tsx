@@ -1,13 +1,19 @@
 "use client";
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Suspense, useEffect, useMemo, useRef } from "react";
-import { MathUtils, SRGBColorSpace, TextureLoader, type Group } from "three";
+import { Suspense, useEffect, useMemo, useRef, type RefObject } from "react";
+import { MathUtils, SRGBColorSpace, TextureLoader, Vector3, type Group } from "three";
 
 /*
  * The 3D office door for the login / landing stage (DESIGN.md section 9).
  * Loaded lazily by DoorStage, never during SSR. Plain three.js geometry, no helper libraries,
  * to keep the bundle small. Renders on demand: frames only while the door is moving.
+ *
+ * Two ways to move it:
+ * - `open` (login): the door eases open over about 1.5 s when the login succeeds.
+ * - `driver` (landing page): scroll owns the door. GSAP writes knock / door / camera (0 to 1) into the
+ *   driver ref and calls the invalidate() it got from onInvalidate to draw one frame, so nothing
+ *   renders while idle.
  *
  * Units are metres. The doorway is 1.0 x 2.1 m, centred on x = 0, in a wall at z = 0.
  * The camera is in the corridor (+z), the lit office is behind the wall (-z).
@@ -17,6 +23,21 @@ const OPEN_ANGLE = MathUtils.degToRad(112);
 const DOOR_W = 1.0;
 const DOOR_H = 2.1;
 const LEAF_GAP = 0.02; // the latch-side gap where the lamp light leaks through
+
+/** Written by the landing page's scroll timeline; read here every frame. */
+export type DoorDriver = {
+  /** 0 to 1 over the three knocks (a small rattle of the leaf). */
+  knock: number;
+  /** 0 closed to 1 open. */
+  door: number;
+  /** 0 in the corridor to 1 through the doorway, inside the lit office. */
+  camera: number;
+};
+
+const CAMERA_FROM = new Vector3(0.9, 1.25, 4.6);
+const CAMERA_TO = new Vector3(0, 1.08, -0.7);
+const LOOK_FROM = new Vector3(0, 1.02, 0);
+const LOOK_TO = new Vector3(0, 1.15, -2.2);
 
 type Palette = Record<"woodLight" | "wood" | "woodDark" | "edge" | "frame" | "wall" | "floor" | "handle" | "lampCore" | "lamp" | "plate", string>;
 
@@ -63,7 +84,7 @@ function Nameplate({ color }: { color: string }) {
   );
 }
 
-function Door({ open, palette }: { open: boolean; palette: Palette }) {
+function Door({ open, palette, driver }: { open: boolean; palette: Palette; driver?: RefObject<DoorDriver> }) {
   const hinge = useRef<Group>(null);
   const progress = useRef(0);
   const invalidate = useThree((s) => s.invalidate);
@@ -73,6 +94,13 @@ function Door({ open, palette }: { open: boolean; palette: Palette }) {
   }, [open, invalidate]);
 
   useFrame((_, delta) => {
+    if (driver) {
+      // Three knocks: the leaf rattles in its frame, dying away, then scroll swings it open.
+      const d = driver.current;
+      const rattle = Math.sin(d.knock * Math.PI * 6) * 0.012 * (1 - d.knock);
+      if (hinge.current) hinge.current.rotation.y = -d.door * OPEN_ANGLE + rattle;
+      return;
+    }
     const target = open ? 1 : 0;
     // Exponential damping: a heavy door that eases out over about 1.5 s.
     progress.current = MathUtils.damp(progress.current, target, 2.6, Math.min(delta, 0.05));
@@ -155,11 +183,31 @@ function Corridor({ palette }: { palette: Palette }) {
   );
 }
 
-function CameraRig() {
+function CameraRig({ driver }: { driver?: RefObject<DoorDriver> }) {
   const camera = useThree((s) => s.camera);
+  const look = useMemo(() => new Vector3(), []);
   useEffect(() => {
-    camera.lookAt(0, 1.02, 0);
+    camera.lookAt(LOOK_FROM);
   }, [camera]);
+  useFrame(() => {
+    if (!driver) return;
+    // Ease in and out, so the walk through the doorway starts and lands softly.
+    const c = driver.current.camera;
+    const t = c * c * (3 - 2 * c);
+    camera.position.lerpVectors(CAMERA_FROM, CAMERA_TO, t);
+    camera.lookAt(look.lerpVectors(LOOK_FROM, LOOK_TO, t));
+  });
+  return null;
+}
+
+/** Hands the scene's invalidate() to the page, so scroll updates draw exactly one frame each. */
+function DriverLink({ onInvalidate }: { onInvalidate: (invalidate: (() => void) | undefined) => void }) {
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => {
+    onInvalidate(() => invalidate());
+    invalidate();
+    return () => onInvalidate(undefined);
+  }, [onInvalidate, invalidate]);
   return null;
 }
 
@@ -174,19 +222,30 @@ function Ready({ onReady }: { onReady: () => void }) {
   return null;
 }
 
-export default function DoorScene({ open, onReady }: { open: boolean; onReady: () => void }) {
+export default function DoorScene({
+  open = false,
+  onReady,
+  driver,
+  onInvalidate,
+}: {
+  open?: boolean;
+  onReady: () => void;
+  driver?: RefObject<DoorDriver>;
+  onInvalidate?: (invalidate: (() => void) | undefined) => void;
+}) {
   const palette = useMemo(() => readPalette(), []);
 
   return (
     <Canvas
-      shadows
+      shadows="percentage"
       frameloop="demand"
       dpr={[1, 1.75]}
       camera={{ position: [0.9, 1.25, 4.6], fov: 32 }}
       gl={{ antialias: true, powerPreference: "low-power" }}
       aria-hidden
     >
-      <CameraRig />
+      <CameraRig driver={driver} />
+      {onInvalidate && <DriverLink onInvalidate={onInvalidate} />}
       <color attach="background" args={[palette.floor]} />
       {/* cool, dim corridor light from the camera side */}
       <hemisphereLight args={[palette.lampCore, palette.floor, 1.1]} />
@@ -204,7 +263,7 @@ export default function DoorScene({ open, onReady }: { open: boolean; onReady: (
       />
       <Suspense fallback={null}>
         <Corridor palette={palette} />
-        <Door open={open} palette={palette} />
+        <Door open={open} palette={palette} driver={driver} />
         <Ready onReady={onReady} />
       </Suspense>
     </Canvas>

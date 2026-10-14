@@ -1,23 +1,24 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { KpmLockup } from "@/components/brand/kpm-logo";
-import { buttonClasses } from "@/components/ui/button";
+import { HeroA } from "@/components/landing/hero-a";
+import { LandingShell } from "@/components/landing/landing-shell";
+import { SessionActions } from "@/components/landing/session-actions";
 
-// Placeholder until the landing page (module 7).
+export const metadata: Metadata = {
+  title: "SCAS | Student Consultation Appointment System, KPM Beranang",
+  description: "Book consultation time with your lecturer at KPM Beranang. Pick a slot, get approved, walk in.",
+};
+
+// Temporary while the two landing versions are compared: "/" shows version A with a link to B.
 export default function Home() {
   return (
-    <main data-theme="dark" data-stage className="grid min-h-dvh place-items-center bg-canvas px-4 text-ink">
-      <div className="grid justify-items-center gap-6 text-center">
-        <KpmLockup />
-        <h1 className="font-display text-4xl font-bold tracking-tight">Student Consultation Appointment System</h1>
-        <div className="flex flex-wrap justify-center gap-3">
-          <Link href="/login" className={buttonClasses({ size: "lg" })}>
-            Log in
-          </Link>
-          <Link href="/signup" className={buttonClasses({ size: "lg", variant: "secondary" })}>
-            Create account
-          </Link>
-        </div>
-      </div>
-    </main>
+    <LandingShell
+      hero={<HeroA actions={<SessionActions variant="hero" />} />}
+      footerExtra={
+        <Link href="/landing/b" className="rounded-chip border border-line px-2 py-1 text-xs text-muted hover:border-line-strong hover:text-ink">
+          Compare: version B
+        </Link>
+      }
+    />
   );
 }

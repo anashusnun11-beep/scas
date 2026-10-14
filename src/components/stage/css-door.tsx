@@ -5,9 +5,23 @@ import { cn } from "@/lib/cn";
  * Static CSS door: the first paint on the login / landing stage, and the full fallback when 3D is
  * skipped (reduced motion, save-data, no WebGL). Opening uses CSS transitions, so it works without
  * JS-driven animation, and the global reduced-motion rule makes it instant.
+ *
+ * `driven`: the landing page sets the CSS variable --door-open (0 closed to 1 open) on an ancestor,
+ * so scroll can scrub the door frame by frame. `smooth={false}` drops the 1.6 s transition for that.
  */
-export function CssDoor({ open, className }: { open: boolean; className?: string }) {
-  const swing = "transition-[transform,opacity] duration-[1600ms] ease-[cubic-bezier(0.22,1,0.36,1)]";
+export function CssDoor({
+  open = false,
+  driven = false,
+  smooth = true,
+  className,
+}: {
+  open?: boolean;
+  driven?: boolean;
+  smooth?: boolean;
+  className?: string;
+}) {
+  const swing = smooth ? "transition-[transform,opacity] duration-[1600ms] ease-[cubic-bezier(0.22,1,0.36,1)]" : "";
+  const amount = driven ? "var(--door-open, 0)" : open ? "1" : "0";
 
   return (
     <div className={cn("relative h-full w-full", className)} style={{ perspective: 1600 }}>
@@ -20,13 +34,14 @@ export function CssDoor({ open, className }: { open: boolean; className?: string
         {/* light leaking through the latch-side gap while the door is shut */}
         <div
           aria-hidden
-          className={cn("absolute bottom-0 right-3 top-3 w-[3px] bg-(--lamp) blur-[2px] transition-opacity duration-500", open && "opacity-0")}
+          className={cn("absolute bottom-0 right-3 top-3 w-[3px] bg-(--lamp) blur-[2px]", smooth && "transition-opacity duration-500")}
+          style={{ opacity: `calc(1 - min(1, ${amount} * 6))` }}
         />
 
         {/* door leaf */}
         <div
           className={cn("absolute inset-x-3 bottom-0 top-3 origin-left [transform-style:preserve-3d]", swing)}
-          style={{ transform: open ? "rotateY(-112deg)" : "rotateY(0deg)" }}
+          style={{ transform: `rotateY(calc(${amount} * -112deg))` }}
         >
           <div
             className="absolute inset-0 flex flex-col rounded-t-[8px] px-[9%] pb-[8%] pt-[10%] [backface-visibility:hidden]"
@@ -57,8 +72,10 @@ export function CssDoor({ open, className }: { open: boolean; className?: string
       {/* lamp light spilling across the floor once the door opens */}
       <div
         aria-hidden
-        className={cn("pointer-events-none absolute -bottom-16 -inset-x-6 h-16 origin-top", swing, open ? "scale-y-100 opacity-100" : "scale-y-[0.2] opacity-0")}
+        className={cn("pointer-events-none absolute -bottom-16 -inset-x-6 h-16 origin-top", swing)}
         style={{
+          opacity: amount,
+          transform: `scaleY(calc(0.2 + ${amount} * 0.8))`,
           background: "linear-gradient(to bottom, color-mix(in oklab, var(--lamp) 55%, transparent), transparent)",
           clipPath: "polygon(10% 0, 90% 0, 100% 100%, 0 100%)",
         }}
