@@ -99,7 +99,7 @@ export function LecturerForm({ mode, initial, idLocked = false }: { mode: "creat
         </Field>
         {mode === "create" && (
           <div className="md:col-span-2">
-            <TempPasswordField id="lecturer-password" error={errors.password} />
+            <TempPasswordField id="lecturer-password" error={errors.password} onValueChange={() => setErrors((e) => ({ ...e, password: undefined }))} />
           </div>
         )}
       </div>

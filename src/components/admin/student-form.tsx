@@ -143,7 +143,7 @@ export function StudentForm({
         </Field>
         {mode === "create" && (
           <div className="md:col-span-2">
-            <TempPasswordField id="student-password" error={errors.password} />
+            <TempPasswordField id="student-password" error={errors.password} onValueChange={() => setErrors((e) => ({ ...e, password: undefined }))} />
           </div>
         )}
       </div>

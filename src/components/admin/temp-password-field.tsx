@@ -23,7 +23,18 @@ export function generatePassword(length = 12) {
 }
 
 /** Temporary password for an admin-created account: type one or generate one, then copy it for the user. */
-export function TempPasswordField({ id, error, label = "Temporary password" }: { id: string; error?: string; label?: string }) {
+export function TempPasswordField({
+  id,
+  error,
+  label = "Temporary password",
+  onValueChange,
+}: {
+  id: string;
+  error?: string;
+  label?: string;
+  /** Called when the value changes, including Generate (which sets it from code, so the form's onChange never fires). */
+  onValueChange?: () => void;
+}) {
   const { toast } = useToast();
   const [value, setValue] = useState("");
   const [visible, setVisible] = useState(false);
@@ -33,11 +44,15 @@ export function TempPasswordField({ id, error, label = "Temporary password" }: {
       <TempPasswordInput
         value={value}
         visible={visible}
-        onChange={setValue}
+        onChange={(v) => {
+          setValue(v);
+          onValueChange?.();
+        }}
         onToggle={() => setVisible(!visible)}
         onGenerate={() => {
           setValue(generatePassword());
           setVisible(true);
+          onValueChange?.();
         }}
         onCopy={async () => {
           try {

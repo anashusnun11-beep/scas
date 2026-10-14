@@ -153,7 +153,7 @@ export function AccountPanel({
           <form method="post" onSubmit={onReset} noValidate className="grid gap-5">
             {message && <FormMessage tone="error">{message}</FormMessage>}
             <input type="hidden" name="userId" value={userId} />
-            <TempPasswordField id={`reset-${userId}`} error={errors.password} label="New temporary password" />
+            <TempPasswordField id={`reset-${userId}`} error={errors.password} label="New temporary password" onValueChange={() => setErrors((e) => ({ ...e, password: undefined }))} />
             <div className="flex flex-wrap justify-end gap-3">
               <Button variant="secondary" onClick={() => setDialog(null)} disabled={pending}>
                 Cancel
