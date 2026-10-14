@@ -8,9 +8,8 @@ import { SiteFooter } from "./site-footer";
 
 /**
  * The landing page around a hero (DESIGN.md section 9): always dark, the "big moment" stage.
- * Every version shares the sections below the hero.
  */
-export function LandingShell({ hero, footerExtra }: { hero: ReactNode; footerExtra?: ReactNode }) {
+export function LandingShell({ hero }: { hero: ReactNode }) {
   return (
     <div data-theme="dark" data-stage className="min-h-dvh overflow-x-clip bg-canvas text-ink">
       <a href="#how" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-(--z-toast) focus:rounded-control focus:bg-primary focus:px-4 focus:py-2 focus:text-on-primary">
@@ -24,7 +23,7 @@ export function LandingShell({ hero, footerExtra }: { hero: ReactNode; footerExt
         <LiveNumbers />
         <FinalCta />
       </main>
-      <SiteFooter extra={footerExtra} />
+      <SiteFooter />
     </div>
   );
 }

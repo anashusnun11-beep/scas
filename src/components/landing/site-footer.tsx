@@ -1,9 +1,8 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
 import { KpmLogo } from "@/components/brand/kpm-logo";
 
-/** Footer: logo, product name, campus, and who built it. `extra` holds the temporary version-compare link. */
-export function SiteFooter({ extra }: { extra?: ReactNode }) {
+/** Footer: logo, product name, campus, and who built it. */
+export function SiteFooter() {
   return (
     <footer className="border-t border-line px-4 py-12 lg:px-8">
       <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
@@ -22,7 +21,6 @@ export function SiteFooter({ extra }: { extra?: ReactNode }) {
           <Link href="/signup" className="text-muted underline-offset-4 hover:text-ink hover:underline">
             Sign up
           </Link>
-          {extra}
         </nav>
       </div>
     </footer>

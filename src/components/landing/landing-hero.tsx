@@ -65,7 +65,7 @@ function offsetWithin(el: HTMLElement, ancestor: HTMLElement) {
 
 const KNOCKS = ["tok,", "tok,", "tok."];
 
-export function HeroA({ actions }: { actions: ReactNode }) {
+export function LandingHero({ actions }: { actions: ReactNode }) {
   const reduce = useMedia("(prefers-reduced-motion: reduce)");
   const desktop = useMedia(DESKTOP) === true && !savesData();
   // null = preference not known yet (SSR and first render): stay static until it is.
