@@ -78,6 +78,16 @@
   --st-rescheduled: #4338ca;
   --st-cancelled: #5b6170;
   --st-completed: #0b6378;
+
+  /* Chart fills per status (reports). Mid-tone steps of the same hue families as --st-*, validated as a
+     categorical palette in this order: pending, rescheduled, approved, completed, rejected, cancelled.
+     Cancelled stays a deliberate neutral grey (it means "nothing happened"). See DESIGN.md 3.5. */
+  --chart-pending: #c47600;
+  --chart-rescheduled: #5146d8;
+  --chart-approved: #23955a;
+  --chart-completed: #1aa0c4;
+  --chart-rejected: #c8362f;
+  --chart-cancelled: #767b8e;
 }
 
 /* ---------- 2b. Semantic tokens: dark (landing, login, sidebar, opt-in for the app) ---------- */
@@ -109,6 +119,13 @@
   --st-rescheduled: #a5b4fc;
   --st-cancelled: #a1a1aa;
   --st-completed: #67e8f9;
+
+  --chart-pending: #b97a12;
+  --chart-rescheduled: #7a6ff0;
+  --chart-approved: #2f9a4f;
+  --chart-completed: #2a9fd0;
+  --chart-rejected: #e0554c;
+  --chart-cancelled: #7d8399;
 }
 
 /* ---------- 3. Component tokens ---------- */
@@ -184,6 +201,8 @@
   --radius-card: 16px;
   --radius-control: 12px;
   --radius-chip: 8px;
+  /* Chart marks only (bar data-ends). Not for UI elements. */
+  --radius-mark: 4px;
 
   --shadow-card: 0 1px 2px rgb(var(--shadow-tint) / 0.06), 0 6px 20px -8px rgb(var(--shadow-tint) / 0.12);
   --shadow-float: 0 12px 40px -12px rgb(var(--shadow-tint) / 0.35);
@@ -261,10 +280,30 @@ body:has([data-stage]) {
   animation: backdrop-in 180ms ease-out;
 }
 
+/* Report bars grow from the baseline once, on first paint. CSS, so the bars are visible without JS;
+   the reduced-motion rule below makes it instant. */
+@keyframes bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+.chart-bar {
+  transform-origin: left center;
+  animation: bar-grow 400ms var(--ease-out-soft) both;
+}
+
 /* Printing (slip, report): white paper, no app chrome. */
 @media print {
   body {
     background: #ffffff;
+  }
+  /* Keep chart fills and status tints on paper (browsers drop backgrounds by default). */
+  .print-exact {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .chart-bar {
+    animation: none;
   }
 }
 
