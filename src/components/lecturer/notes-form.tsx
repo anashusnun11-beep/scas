@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Field, Textarea } from "@/components/ui/field";
 import { FormMessage } from "@/components/ui/form-message";
 import { useToast } from "@/components/ui/toast";
+import { clearErrorOnEdit } from "@/lib/form-errors";
 import { noteSchema, type NoteInput } from "@/lib/validation/appointment-action";
 import { fieldErrors, type FieldErrors } from "@/lib/validation/auth";
 import { saveNoteAction } from "@/server/actions/lecturer-appointment";
@@ -54,7 +55,7 @@ export function NotesForm({
   }
 
   return (
-    <form method="post" onSubmit={onSubmit} noValidate className="grid gap-5">
+    <form method="post" onSubmit={onSubmit} onChange={clearErrorOnEdit(setErrors)} noValidate className="grid gap-5">
       {message && <FormMessage tone="error">{message}</FormMessage>}
       <input type="hidden" name="appointmentId" value={appointmentId} />
       <Field id={`notes-${appointmentId}`} label="Consultation notes" required error={errors.notes}>

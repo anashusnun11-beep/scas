@@ -7,6 +7,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Field, Textarea } from "@/components/ui/field";
 import { FormMessage } from "@/components/ui/form-message";
+import { clearErrorOnEdit } from "@/lib/form-errors";
 import { cn } from "@/lib/cn";
 import { rescheduleSchema, type RescheduleInput } from "@/lib/validation/appointment-action";
 import { fieldErrors, type FieldErrors } from "@/lib/validation/auth";
@@ -62,7 +63,7 @@ export function RescheduleDialog({
           Add a new slot under Manage Availability first, then reschedule.
         </EmptyState>
       ) : (
-        <form method="post" onSubmit={onSubmit} noValidate className="grid gap-5">
+        <form method="post" onSubmit={onSubmit} onChange={clearErrorOnEdit(setErrors)} noValidate className="grid gap-5">
           {message && <FormMessage tone="error">{message}</FormMessage>}
           <input type="hidden" name="appointmentId" value={appointmentId} />
           <fieldset aria-invalid={errors.newSlotId ? true : undefined} aria-describedby={errors.newSlotId ? `new-slot-error-${appointmentId}` : undefined}>

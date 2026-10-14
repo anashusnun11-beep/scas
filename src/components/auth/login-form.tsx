@@ -6,6 +6,7 @@ import { useState, useTransition, type FormEvent } from "react";
 import { useDoor } from "@/components/stage/door-context";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
+import { clearErrorOnEdit } from "@/lib/form-errors";
 import { fieldErrors, loginSchema, type FieldErrors, type LoginInput } from "@/lib/validation/auth";
 import { loginAction } from "@/server/actions/auth";
 import { FormMessage } from "@/components/ui/form-message";
@@ -56,7 +57,7 @@ export function LoginForm({ callbackUrl, notice }: { callbackUrl?: string; notic
   const busy = pending || entering;
 
   return (
-    <form method="post" onSubmit={onSubmit} noValidate className="grid gap-5">
+    <form method="post" onSubmit={onSubmit} onChange={clearErrorOnEdit(setErrors)} noValidate className="grid gap-5">
       {message ? (
         <FormMessage tone="error">{message}</FormMessage>
       ) : notice ? (

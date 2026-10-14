@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Field, Textarea } from "@/components/ui/field";
 import { FormMessage } from "@/components/ui/form-message";
+import { clearErrorOnEdit } from "@/lib/form-errors";
 import type { ActionResult } from "@/lib/action-result";
 import { reasonSchema, type ReasonInput } from "@/lib/validation/appointment-action";
 import { fieldErrors, type FieldErrors } from "@/lib/validation/auth";
@@ -58,7 +59,7 @@ export function ReasonDialog({
 
   return (
     <Dialog open={open} onClose={onClose} title={title} description={description}>
-      <form method="post" onSubmit={onSubmit} noValidate className="grid gap-5">
+      <form method="post" onSubmit={onSubmit} onChange={clearErrorOnEdit(setErrors)} noValidate className="grid gap-5">
         {message && <FormMessage tone="error">{message}</FormMessage>}
         <input type="hidden" name="appointmentId" value={appointmentId} />
         <Field id={`reason-${appointmentId}`} label="Reason" required error={errors.reason} hint="The student sees this with the appointment.">

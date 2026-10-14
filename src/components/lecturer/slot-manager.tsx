@@ -12,6 +12,7 @@ import { Field, Input, Select } from "@/components/ui/field";
 import { FormMessage } from "@/components/ui/form-message";
 import type { AppointmentStatus } from "@/components/ui/status-badge";
 import { useToast } from "@/components/ui/toast";
+import { clearErrorOnEdit } from "@/lib/form-errors";
 import { cn } from "@/lib/cn";
 import { endFor, formatMinutes, parseTimeOfDay } from "@/lib/slot-time";
 import { fieldErrors, type FieldErrors } from "@/lib/validation/auth";
@@ -129,7 +130,7 @@ export function SlotManager({
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
       <Card className="lg:sticky lg:top-[calc(var(--topbar-height)+1.5rem)]">
         <CardHeader title={form.slotId ? "Edit slot" : "Add a slot"} description={`Each slot is ${sessionDuration} minutes (your session length).`} />
-        <form method="post" onSubmit={onSubmit} noValidate className="grid gap-4 p-5">
+        <form method="post" onSubmit={onSubmit} onChange={clearErrorOnEdit(setErrors)} noValidate className="grid gap-4 p-5">
           {message && <FormMessage tone="error">{message}</FormMessage>}
           {form.historyLocked && (
             <FormMessage tone="info">This slot has past appointments, so only its status can change.</FormMessage>

@@ -8,6 +8,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { FormMessage } from "@/components/ui/form-message";
 import { useToast } from "@/components/ui/toast";
+import { clearErrorOnEdit } from "@/lib/form-errors";
 import { cn } from "@/lib/cn";
 import { STUDENT_ID_EXAMPLE } from "@/lib/student-id";
 import { fieldErrors, type FieldErrors } from "@/lib/validation/auth";
@@ -71,7 +72,7 @@ export function BookingForm({
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
       <Card>
         <CardHeader title="Book a consultation" description={`With ${lecturerName}. Fields marked * are required.`} />
-        <form method="post" onSubmit={onSubmit} noValidate className="grid gap-6 p-5">
+        <form method="post" onSubmit={onSubmit} onChange={clearErrorOnEdit(setErrors)} noValidate className="grid gap-6 p-5">
           {message && <FormMessage tone="error">{message}</FormMessage>}
 
           <Field

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/field";
 import { FormMessage } from "@/components/ui/form-message";
 import { useToast } from "@/components/ui/toast";
+import { clearErrorOnEdit } from "@/lib/form-errors";
 import { SESSION_DURATIONS, type LimitSettings } from "@/lib/limits";
 import { fieldErrors, type FieldErrors } from "@/lib/validation/auth";
 import { limitSchema, type LimitInput } from "@/lib/validation/limit";
@@ -56,7 +57,7 @@ export function LimitForm({ settings }: { settings: LimitSettings }) {
   }
 
   return (
-    <form key={`${version}-${JSON.stringify(settings)}`} method="post" onSubmit={onSubmit} noValidate className="grid gap-5">
+    <form key={`${version}-${JSON.stringify(settings)}`} method="post" onSubmit={onSubmit} onChange={clearErrorOnEdit(setErrors)} noValidate className="grid gap-5">
       {message && <FormMessage tone="error">{message}</FormMessage>}
       <div className="grid gap-5 sm:grid-cols-2">
         <Field id="limit-day" label="Max consultations per day" required error={errors.maxPerDay} hint="Across all students.">

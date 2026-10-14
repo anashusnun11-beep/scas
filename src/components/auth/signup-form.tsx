@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
+import { clearErrorOnEdit } from "@/lib/form-errors";
 import { parseStudentId, STUDENT_ID_EXAMPLE, type ParsedStudentId } from "@/lib/student-id";
 import { fieldErrors, signupSchema, type FieldErrors, type SignupInput } from "@/lib/validation/auth";
 import { signUpAction } from "@/server/actions/auth";
@@ -43,7 +44,7 @@ export function SignupForm() {
   }
 
   return (
-    <form method="post" onSubmit={onSubmit} noValidate className="grid gap-5">
+    <form method="post" onSubmit={onSubmit} onChange={clearErrorOnEdit(setErrors)} noValidate className="grid gap-5">
       {message && <FormMessage tone="error">{message}</FormMessage>}
 
       <Field id="signup-name" label="Full name" required error={errors.name}>
