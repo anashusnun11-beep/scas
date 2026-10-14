@@ -43,3 +43,6 @@ next-env.d.ts
 
 # prisma generated client
 /src/generated/
+
+# database backups (npm run db:backup): real data, never commit
+/backups/
