@@ -20,6 +20,9 @@ export function AuthTabs() {
           <Link
             key={tab.href}
             href={tab.href}
+            // No prefetch: right after a login the router re-prefetches visible links, the proxy sends a
+            // signed-in user away from /login and /signup, and that redirected prefetch 404s in the console.
+            prefetch={false}
             aria-current={active ? "page" : undefined}
             className={cn(
               "grid h-10 place-items-center rounded-[9px] text-sm font-semibold transition-colors duration-150",
