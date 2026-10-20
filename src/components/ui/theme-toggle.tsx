@@ -22,7 +22,7 @@ export function setTheme(theme: Theme) {
   }
 }
 
-/** Light/dark switch for the app. Landing and login stay dark regardless. */
+/** Light/dark switch for the app. Login and sign up stay dark regardless. */
 export function ThemeToggle({ className }: { className?: string }) {
   const theme = useSyncExternalStore(subscribe, getTheme, () => DEFAULT_THEME);
   const next = theme === "light" ? "dark" : "light";

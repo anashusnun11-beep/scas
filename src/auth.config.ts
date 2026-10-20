@@ -42,7 +42,7 @@ export const authConfig = {
       const { pathname } = request.nextUrl;
       const role = auth?.user?.role;
 
-      // Signed-in users skip the auth screens and /dashboard goes to their own home.
+      // Signed-in users skip the auth screens; /dashboard and / go to their own home.
       // Exception: requireRole() sends a stale session (e.g. deactivated user) to /login?reason=...,
       // which must not bounce back.
       const isAuthScreen = pathname === "/login" || pathname === "/signup";
@@ -51,6 +51,9 @@ export const authConfig = {
         return Response.redirect(new URL(roleHome[role], request.nextUrl));
       }
       if (pathname === "/dashboard") return false; // not signed in: to /login
+
+      // No landing page: "/" opens the login stage, or the role home for a signed-in user.
+      if (pathname === "/") return Response.redirect(new URL(role ? roleHome[role] : "/login", request.nextUrl));
 
       const area = areaFor(pathname);
       if (!area) return true;

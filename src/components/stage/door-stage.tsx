@@ -28,7 +28,7 @@ function prefersSavingData() {
 }
 
 /**
- * The door on the login / landing stage (DESIGN.md section 9).
+ * The door on the login stage (DESIGN.md section 9).
  * 1. First paint is the CSS door, so the page never waits for three.js (NFR04).
  * 2. Once the stage is on screen and the browser is idle, the 3D scene loads and cross-fades in.
  * 3. 3D is skipped under reduced motion, save-data, or without WebGL: the CSS door stays.

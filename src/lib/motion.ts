@@ -3,7 +3,7 @@
  *
  * Two lanes:
  * - App lane (dashboards, forms): fast, no bounce, 120 to 240 ms. Things people do many times a day.
- * - Stage lane (landing, login): cinematic, only for the door moment people see once per visit.
+ * - Stage lane (login, sign up): cinematic, only for the door moment people see once per visit.
  *
  * Page enter inside the AppShell is the CSS utility `animate-page-enter` (globals.css), so content
  * never waits for JavaScript to become visible.
@@ -65,7 +65,7 @@ export const variants = {
  * Split-flap timing. A cell flips `baseTicks + index * ticksPerCell` times, starting
  * `index * staggerTicks` ticks late, then lands on the new letter.
  * - badge: small and fast, the whole change is done in about 300 ms
- * - sign: the door sign on landing / login, slower and louder
+ * - sign: the door sign on login / sign up, slower and louder
  */
 export const splitFlap = {
   badge: { tickMs: 28, baseTicks: 3, ticksPerCell: 1, staggerTicks: 0 },

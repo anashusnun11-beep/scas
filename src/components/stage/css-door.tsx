@@ -2,26 +2,13 @@ import { KpmLogo } from "@/components/brand/kpm-logo";
 import { cn } from "@/lib/cn";
 
 /**
- * Static CSS door: the first paint on the login / landing stage, and the full fallback when 3D is
+ * Static CSS door: the first paint on the login stage, and the full fallback when 3D is
  * skipped (reduced motion, save-data, no WebGL). Opening uses CSS transitions, so it works without
  * JS-driven animation, and the global reduced-motion rule makes it instant.
- *
- * `driven`: the landing page sets the CSS variable --door-open (0 closed to 1 open) on an ancestor,
- * so scroll can scrub the door frame by frame. `smooth={false}` drops the 1.6 s transition for that.
  */
-export function CssDoor({
-  open = false,
-  driven = false,
-  smooth = true,
-  className,
-}: {
-  open?: boolean;
-  driven?: boolean;
-  smooth?: boolean;
-  className?: string;
-}) {
-  const swing = smooth ? "transition-[transform,opacity] duration-[1600ms] ease-[cubic-bezier(0.22,1,0.36,1)]" : "";
-  const amount = driven ? "var(--door-open, 0)" : open ? "1" : "0";
+export function CssDoor({ open = false, className }: { open?: boolean; className?: string }) {
+  const swing = "transition-[transform,opacity] duration-[1600ms] ease-[cubic-bezier(0.22,1,0.36,1)]";
+  const amount = open ? "1" : "0";
 
   return (
     <div className={cn("relative h-full w-full", className)} style={{ perspective: 1600 }}>
@@ -34,7 +21,7 @@ export function CssDoor({
         {/* light leaking through the latch-side gap while the door is shut */}
         <div
           aria-hidden
-          className={cn("absolute bottom-0 right-3 top-3 w-[3px] bg-(--lamp) blur-[2px]", smooth && "transition-opacity duration-500")}
+          className="absolute bottom-0 right-3 top-3 w-[3px] bg-(--lamp) blur-[2px] transition-opacity duration-500"
           style={{ opacity: `calc(1 - min(1, ${amount} * 6))` }}
         />
 

@@ -2,7 +2,7 @@
 // NFR10, see docs/BACKUP.md. The connection string is read from .env and never printed.
 import "dotenv/config";
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
 import path from "node:path";
 
 // libpq only understands its own URI parameters; Prisma-only ones (schema, pgbouncer, ...) would make pg_dump fail.
@@ -34,6 +34,9 @@ const url = new URL(raw);
 // Neon: dump through the direct endpoint, not the connection pooler.
 url.hostname = url.hostname.replace("-pooler.", ".");
 for (const key of [...url.searchParams.keys()]) if (!LIBPQ_PARAMS.has(key)) url.searchParams.delete(key);
+// .env uses verify-full for node-postgres. libpq's verify-full needs a root certificate file, which Windows
+// doesn't have, so pg_dump uses require (still encrypted; channel_binding=require guards against a fake server).
+if (url.searchParams.get("sslmode") === "verify-full" && !url.searchParams.has("sslrootcert")) url.searchParams.set("sslmode", "require");
 // The password goes in PGPASSWORD, so it is not on the command line either.
 const password = decodeURIComponent(url.password);
 url.password = "";
@@ -57,7 +60,10 @@ let stderr = "";
 child.stderr.on("data", (d) => (stderr += d));
 child.on("error", (e) => fail(e.code === "ENOENT" ? "pg_dump was not found. Install PostgreSQL client tools or set PG_DUMP." : redact(e.message)));
 child.on("close", (code) => {
-  if (code !== 0) fail(redact(stderr.trim()) || `pg_dump exited with code ${code}`);
+  if (code !== 0) {
+    rmSync(file, { force: true }); // don't leave an empty or partial dump that looks like a backup
+    fail(redact(stderr.trim()) || `pg_dump exited with code ${code}`);
+  }
   const kb = Math.round(statSync(file).size / 1024);
   console.log(`Backup saved: backups/${path.basename(file)} (${kb} KB, ${((Date.now() - started) / 1000).toFixed(1)} s)`);
 });

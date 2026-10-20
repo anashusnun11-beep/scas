@@ -7,7 +7,7 @@
  */
 
 /* `dark:` follows the data-theme attribute, so a subtree can force a theme
-   (the sidebar is always dark, landing and login are always dark). */
+   (the sidebar is always dark, login and sign up are always dark). */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 /* ---------- 1. Primitive tokens ---------- */
@@ -90,7 +90,7 @@
   --chart-cancelled: #767b8e;
 }
 
-/* ---------- 2b. Semantic tokens: dark (landing, login, sidebar, opt-in for the app) ---------- */
+/* ---------- 2b. Semantic tokens: dark (login, sign up, sidebar, opt-in for the app) ---------- */
 [data-theme="dark"] {
   color-scheme: dark;
   --canvas: var(--navy-950);
@@ -138,7 +138,7 @@
   --flap-cell-ink: var(--ink-50);
   --logo-plate: var(--navy-0); /* the logo needs a light plate in every theme */
 
-  /* Stage door (login, landing). Read by the CSS door and by the 3D scene. */
+  /* Stage door (login, sign up). Read by the CSS door and by the 3D scene. */
   --door-wood-light: #4a3020;
   --door-wood: #3a2618;
   --door-wood-dark: #2a1b10;
@@ -227,7 +227,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Dark stage pages (login, landing): the body matches, so overscroll never flashes light. */
+/* Dark stage pages (login, sign up): the body matches, so overscroll never flashes light. */
 body:has([data-stage]) {
   background: var(--navy-950);
 }
@@ -290,32 +290,6 @@ body:has([data-stage]) {
 .chart-bar {
   transform-origin: left center;
   animation: bar-grow 400ms var(--ease-out-soft) both;
-}
-
-/* Landing page section reveal: CSS scroll-driven, so content never waits for JavaScript and is fully
-   visible in browsers without animation-timeline support. Only with no motion preference. */
-@keyframes reveal-up {
-  from {
-    opacity: 0;
-    transform: translateY(28px);
-    filter: blur(6px);
-  }
-}
-@media (prefers-reduced-motion: no-preference) {
-  @supports (animation-timeline: view()) {
-    .reveal {
-      animation: reveal-up linear both;
-      animation-timeline: view();
-      animation-range: entry 5% entry 55%;
-    }
-  }
-}
-
-/* Landing hero: with reduced motion the door is simply open, from the very first paint. */
-@media (prefers-reduced-motion: reduce) {
-  .hero-door {
-    --door-open: 1;
-  }
 }
 
 /* Printing (slip, report): white paper, no app chrome. */

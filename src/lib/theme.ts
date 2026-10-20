@@ -2,7 +2,7 @@ export type Theme = "light" | "dark";
 
 export const THEME_STORAGE_KEY = "scas-theme";
 
-/** The app (dashboards, forms) defaults to light. Landing and login force dark locally. */
+/** The app (dashboards, forms) defaults to light. Login and sign up force dark locally. */
 export const DEFAULT_THEME: Theme = "light";
 
 /**
