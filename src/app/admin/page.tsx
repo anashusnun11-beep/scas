@@ -4,7 +4,6 @@ import Link from "next/link";
 import { AnimatedNumber } from "@/components/ui/animated-number";
 import { buttonClasses } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
-import { FormMessage } from "@/components/ui/form-message";
 import { requireRole } from "@/lib/auth/guard";
 import { formatLongDate, formatSlotDate, malaysiaToday } from "@/lib/dates";
 import { getAdminDashboard } from "@/server/queries/admin";
@@ -43,18 +42,9 @@ export default async function AdminDashboard() {
       </div>
       <p className="-mt-3 text-xs text-muted">This week = week of {formatSlotDate(data.weekStart)}, by consultation date, not counting rejected or cancelled ones.</p>
 
-      {data.unassigned > 0 && (
-        <FormMessage tone="info">
-          {data.unassigned} active student{data.unassigned === 1 ? " has" : "s have"} no assigned lecturer yet and can&apos;t book.{" "}
-          <Link href="/admin/students" className="font-semibold underline underline-offset-2">
-            Assign them
-          </Link>
-        </FormMessage>
-      )}
-
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
-          <CardHeader title="Students" description="Add students, assign their lecturer, deactivate accounts." />
+          <CardHeader title="Students" description="Add students, update their details, deactivate accounts." />
           <CardBody className="flex flex-wrap gap-3">
             <Link href="/admin/students/new" className={buttonClasses()}>
               <UserPlusIcon aria-hidden className="size-4" />

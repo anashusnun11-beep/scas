@@ -21,7 +21,7 @@ export default async function LecturerPage({ params }: { params: Promise<{ id: s
 
   const blockers = await lecturerBlockers(lecturer.lecturerId);
   const blocked =
-    lecturer.user.accountStatus === "ACTIVE" && (blockers.activeAppointments || blockers.assignedStudents)
+    lecturer.user.accountStatus === "ACTIVE" && blockers.activeAppointments
       ? blockerMessage(lecturer.user.name, blockers)
       : undefined;
 
@@ -54,11 +54,7 @@ export default async function LecturerPage({ params }: { params: Promise<{ id: s
         <Card>
           <CardHeader title="Account" />
           <CardBody className="grid gap-4">
-            <dl className="grid grid-cols-2 gap-3 text-sm">
-              <div className="rounded-control bg-surface-2 p-3">
-                <dt className="text-muted">Assigned students</dt>
-                <dd className="font-display text-2xl font-bold">{blockers.assignedStudents}</dd>
-              </div>
+            <dl className="grid gap-3 text-sm">
               <div className="rounded-control bg-surface-2 p-3">
                 <dt className="text-muted">Active appointments</dt>
                 <dd className="font-display text-2xl font-bold">{blockers.activeAppointments}</dd>

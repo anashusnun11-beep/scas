@@ -62,7 +62,7 @@ export function SignupForm() {
           // One persistent live region: screen readers hear the programme as soon as the ID is valid.
           <span aria-live="polite" className={studentId ? "font-medium text-success" : undefined}>
             {studentId
-              ? `${studentId.programme}, ${studentId.intakeYear} intake ${String(studentId.intake).padStart(2, "0")}`
+              ? `${studentId.programme} (${studentId.id})`
               : `Example: ${STUDENT_ID_EXAMPLE}. Your programme is filled in from the ID.`}
           </span>
         }

@@ -143,13 +143,14 @@ async function main() {
     });
   }
 
-  // KPMB student ID format <CODE><YY><INTAKE>-<NNN>; programme comes from the code (src/lib/student-id.ts).
+  // KPMB student ID: <CODE> + 7 digits, stored as e.g. BCS2403-001; programme comes from the code (src/lib/student-id.ts).
+  // No assigned lecturer: students may book any active lecturer (decision 2026-10-21).
   const students = [
-    { studentId: "BCS2403-001", name: "Aina Sofea binti Rahman", email: "aina@scas.test", lecturerId: "LEC001" },
-    { studentId: "BCS2402-015", name: "Kavitha a/p Raman", email: "kavitha@scas.test", lecturerId: "LEC001" },
-    { studentId: "BDA2401-007", name: "Lim Wei Jie", email: "weijie@scas.test", lecturerId: "LEC002" },
+    { studentId: "BCS2403-001", name: "Aina Sofea binti Rahman", email: "aina@scas.test" },
+    { studentId: "BCS2402-015", name: "Kavitha a/p Raman", email: "kavitha@scas.test" },
+    { studentId: "BDA2401-007", name: "Lim Wei Jie", email: "weijie@scas.test" },
     // Deactivated account, to test that INACTIVE users cannot log in (BR8, module 2).
-    { studentId: "BDB2401-031", name: "Nur Iman binti Zulkifli", email: "iman@scas.test", lecturerId: "LEC002", inactive: true },
+    { studentId: "BDB2401-031", name: "Nur Iman binti Zulkifli", email: "iman@scas.test", inactive: true },
   ];
 
   for (const s of students) {
@@ -158,7 +159,6 @@ async function main() {
         studentId: s.studentId,
         programme: programmeOf(s.studentId),
         semester: 4,
-        lecturer: { connect: { lecturerId: s.lecturerId } },
         user: {
           create: {
             name: s.name,

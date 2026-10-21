@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import { PhoneForm } from "@/components/profile/phone-form";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { requireRole } from "@/lib/auth/guard";
-import { getAssignedLecturer } from "@/server/queries/student";
+import { getStudentProfile } from "@/server/queries/student";
 
 export const metadata: Metadata = { title: "Profile | SCAS" };
 
 /** Profile: view your details, update your phone number. Everything else is managed by the admin (FR14). */
 export default async function ProfilePage() {
   const user = await requireRole("STUDENT");
-  const student = await getAssignedLecturer(user.id);
+  const student = await getStudentProfile(user.id);
 
   const rows: [string, string][] = [
     ["Name", user.name],
@@ -17,7 +17,6 @@ export default async function ProfilePage() {
     ["Student ID", student?.studentId ?? "Not set"],
     ["Programme", student?.programme ?? "Not set"],
     ["Semester", student?.semester ? String(student.semester) : "Not set"],
-    ["Lecturer", student?.lecturer?.user.name ?? "Not assigned yet"],
   ];
 
   return (

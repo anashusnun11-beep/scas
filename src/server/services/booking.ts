@@ -9,7 +9,6 @@ type Tx = Prisma.TransactionClient;
 
 export type BookingErrorCode =
   | "invalid-student-id"
-  | "no-lecturer"
   | "slot-not-found"
   | "slot-taken"
   | "slot-past"
@@ -96,29 +95,31 @@ export async function checkConsultationLimit(tx: Tx, c: LimitCheck) {
  * - the partial unique index on appointments(slot_id) is the last line of defence.
  */
 export async function submitBooking(input: { userId: number; studentIdInput: string; slotId: number; purpose: string }, now = new Date()) {
-  const student = await prisma.student.findUnique({
-    where: { userId: input.userId },
-    select: { studentId: true, lecturerId: true, lecturer: { select: { user: { select: { name: true } } } } },
-  });
+  const student = await prisma.student.findUnique({ where: { userId: input.userId }, select: { studentId: true } });
 
   // «include» Insert Student ID (SD3 step 11): it must be the signed-in student's own ID.
   if (!student || student.studentId !== input.studentIdInput) {
     throw new BookingError("invalid-student-id", "Invalid Student ID. Enter your own student ID.", "studentId");
   }
-  if (!student.lecturerId || !student.lecturer) {
-    throw new BookingError("no-lecturer", "You don't have an assigned lecturer yet. Please contact the admin office.");
-  }
-  const lecturerId = student.lecturerId;
-  const lecturerName = student.lecturer.user.name;
+
+  // Students may book any active lecturer (decision 2026-10-21), so the lecturer comes from the chosen slot.
+  const gone = new BookingError("slot-not-found", "That slot is no longer offered. Please choose again.", "slotId");
+  const target = await prisma.availabilitySlot.findUnique({
+    where: { id: input.slotId },
+    select: { lecturerId: true, lecturer: { select: { user: { select: { name: true } } } } },
+  });
+  if (!target) throw gone;
+  const lecturerId = target.lecturerId;
+  const lecturerName = target.lecturer.user.name;
 
   try {
     return await prisma.$transaction(async (tx) => {
       await lockLecturer(tx, lecturerId);
 
+      // Re-read under the lock: deactivating a lecturer takes the same lock (SD12).
+      const lecturer = await tx.lecturer.findUnique({ where: { lecturerId }, select: { user: { select: { accountStatus: true } } } });
       const slot = await tx.availabilitySlot.findUnique({ where: { id: input.slotId } });
-      if (!slot || slot.lecturerId !== lecturerId) {
-        throw new BookingError("slot-not-found", "That slot is not one of your lecturer's slots. Please choose again.", "slotId");
-      }
+      if (!slot || slot.lecturerId !== lecturerId || lecturer?.user.accountStatus !== "ACTIVE") throw gone;
       if (slot.slotStatus !== "AVAILABLE") {
         throw new BookingError("slot-taken", "Sorry, that slot has just been taken. Please choose another slot.", "slotId");
       }

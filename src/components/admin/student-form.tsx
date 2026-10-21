@@ -13,8 +13,6 @@ import { fieldErrors, type FieldErrors } from "@/lib/validation/auth";
 import { createStudentAction, updateStudentAction } from "@/server/actions/admin";
 import { TempPasswordField } from "./temp-password-field";
 
-export type LecturerOption = { lecturerId: string; name: string; department: string | null };
-
 export type StudentFormValues = {
   name: string;
   email: string;
@@ -22,19 +20,16 @@ export type StudentFormValues = {
   studentId: string;
   semester: string;
   faculty: string;
-  lecturerId: string;
 };
 
 /** FR14 add / edit student (UI10, SD11). «include» Insert Student ID uses the KPMB format rule. */
 export function StudentForm({
   mode,
   initial,
-  lecturers,
   idLocked = false,
 }: {
   mode: "create" | "edit";
   initial?: StudentFormValues;
-  lecturers: LecturerOption[];
   idLocked?: boolean;
 }) {
   const router = useRouter();
@@ -43,7 +38,7 @@ export function StudentForm({
   const [errors, setErrors] = useState<FieldErrors<StudentFormInput>>({});
   const [message, setMessage] = useState<string>();
   const [parsedId, setParsedId] = useState(() => (initial ? parseStudentId(initial.studentId) : null));
-  const v = initial ?? { name: "", email: "", phoneNo: "", studentId: "", semester: "", faculty: "", lecturerId: "" };
+  const v = initial ?? { name: "", email: "", phoneNo: "", studentId: "", semester: "", faculty: "" };
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -86,7 +81,7 @@ export function StudentForm({
               {idLocked
                 ? "This student has appointments, so the ID can't change."
                 : parsedId
-                  ? `${parsedId.programme}, ${parsedId.intakeYear} intake ${String(parsedId.intake).padStart(2, "0")}`
+                  ? `${parsedId.programme} (${parsedId.id})`
                   : `Example: ${STUDENT_ID_EXAMPLE}. The programme is filled in from the ID.`}
             </span>
           }
@@ -129,17 +124,6 @@ export function StudentForm({
         </Field>
         <Field id="student-faculty" label="Faculty" error={errors.faculty} hint="Optional.">
           <Input name="faculty" defaultValue={v.faculty} autoComplete="off" />
-        </Field>
-        <Field id="student-lecturer" label="Assigned lecturer" error={errors.lecturerId} hint="Only active lecturers are listed." className="md:col-span-2">
-          <Select name="lecturerId" defaultValue={v.lecturerId}>
-            <option value="">Not assigned yet</option>
-            {lecturers.map((l) => (
-              <option key={l.lecturerId} value={l.lecturerId}>
-                {l.name}
-                {l.department ? ` (${l.department})` : ""}
-              </option>
-            ))}
-          </Select>
         </Field>
         {mode === "create" && (
           <div className="md:col-span-2">

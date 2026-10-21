@@ -13,7 +13,7 @@ export function SlotBoard({ slots, limit }: { slots: SlotOption[]; limit?: numbe
   if (shown.length === 0) {
     return (
       <EmptyState icon={CalendarXIcon} title="No open slots right now">
-        Your lecturer has not opened any consultation slots for the next four weeks. Check again later or contact them by e-mail.
+        This lecturer has not opened any consultation slots for the next four weeks. Check again later or contact them by e-mail.
       </EmptyState>
     );
   }

@@ -1,10 +1,7 @@
-import { ChalkboardTeacherIcon, EnvelopeSimpleIcon, MapPinIcon, PhoneIcon } from "@phosphor-icons/react/ssr";
+import { EnvelopeSimpleIcon, MapPinIcon, PhoneIcon } from "@phosphor-icons/react/ssr";
 import type { ReactNode } from "react";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
-import type { StudentWithLecturer } from "@/server/queries/student";
-
-type Lecturer = NonNullable<StudentWithLecturer["lecturer"]>;
+import type { LecturerDetails } from "@/server/queries/student";
 
 function Row({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
   return (
@@ -18,20 +15,11 @@ function Row({ icon, label, children }: { icon: ReactNode; label: string; childr
   );
 }
 
-/** FR03 View Assigned Lecturer Details: name, e-mail, department, office room, phone. */
-export function LecturerCard({ lecturer, action }: { lecturer: Lecturer | null; action?: ReactNode }) {
-  if (!lecturer) {
-    // SD2 alt: no assigned lecturer
-    return (
-      <EmptyState icon={ChalkboardTeacherIcon} title="No lecturer assigned yet">
-        The admin office assigns each student a lecturer. Please contact them, then you can book consultations here.
-      </EmptyState>
-    );
-  }
-
+/** FR03 View Lecturer Details: name, e-mail, department, office room, phone. */
+export function LecturerCard({ lecturer, action }: { lecturer: LecturerDetails; action?: ReactNode }) {
   return (
     <Card>
-      <CardHeader title="Your lecturer" />
+      <CardHeader title="Lecturer" />
       <CardBody>
         <p className="font-display text-heading font-semibold">{lecturer.user.name}</p>
         <p className="text-sm text-muted">

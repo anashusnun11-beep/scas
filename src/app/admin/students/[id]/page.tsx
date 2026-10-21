@@ -7,7 +7,7 @@ import { StudentForm } from "@/components/admin/student-form";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { requireRole } from "@/lib/auth/guard";
 import { formatTimestamp } from "@/lib/dates";
-import { getLecturerOptions, getStudentForEdit } from "@/server/queries/admin";
+import { getStudentForEdit } from "@/server/queries/admin";
 import { previewStudentDeactivation } from "@/server/services/admin-users";
 
 export const metadata: Metadata = { title: "Student | SCAS" };
@@ -17,14 +17,9 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
   await requireRole("ADMIN");
   const { id } = await params;
   const studentId = decodeURIComponent(id);
-  const [student, lecturers] = await Promise.all([getStudentForEdit(studentId), getLecturerOptions()]);
+  const student = await getStudentForEdit(studentId);
   if (!student) notFound();
 
-  const options = lecturers.map((l) => ({ lecturerId: l.lecturerId, name: l.user.name, department: l.department }));
-  // Keep a currently assigned (now inactive) lecturer visible in the dropdown so the form shows the truth.
-  if (student.lecturerId && !options.some((o) => o.lecturerId === student.lecturerId)) {
-    options.push({ lecturerId: student.lecturerId, name: `${student.lecturerId} (inactive)`, department: null });
-  }
   const upcoming = student.user.accountStatus === "ACTIVE" ? await previewStudentDeactivation(student.studentId) : 0;
 
   return (
@@ -40,7 +35,6 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
             <StudentForm
               key={student.studentId}
               mode="edit"
-              lecturers={options}
               idLocked={student._count.appointments > 0}
               initial={{
                 name: student.user.name,
@@ -49,7 +43,6 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
                 studentId: student.studentId,
                 semester: student.semester ? String(student.semester) : "",
                 faculty: student.faculty ?? "",
-                lecturerId: student.lecturerId ?? "",
               }}
             />
           </CardBody>

@@ -22,7 +22,7 @@ export type NavItem = { href: string; label: string; icon: NavIcon };
 export const navigation: Record<Role, NavItem[]> = {
   STUDENT: [
     { href: "/student", label: "Dashboard", icon: "dashboard" },
-    { href: "/student/lecturer", label: "My Lecturer", icon: "lecturer" },
+    { href: "/student/lecturers", label: "Lecturers", icon: "lecturer" },
     { href: "/student/book", label: "Book Appointment", icon: "book" },
     { href: "/student/appointments", label: "Appointment Status", icon: "status" },
     { href: "/student/history", label: "Appointment History", icon: "history" },

@@ -1,30 +1,27 @@
 import { ArrowRightIcon } from "@phosphor-icons/react/ssr";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LecturerCard } from "@/components/student/lecturer-card";
-import { SlotBoard } from "@/components/student/slot-board";
-import { toSlotOptions } from "@/components/student/slot-options";
+import { LecturerDirectory } from "@/components/student/lecturer-directory";
 import { AnimatedNumber } from "@/components/ui/animated-number";
-import { buttonClasses } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { appointmentCode } from "@/lib/appointment";
 import { requireRole } from "@/lib/auth/guard";
 import { formatLongDate, formatSlotDate, formatTimeRange, malaysiaToday } from "@/lib/dates";
-import { getAssignedLecturer, getAvailableSlots, getDashboardStats, getMyAppointments } from "@/server/queries/student";
+import { getDashboardStats, getLecturerDirectory, getMyAppointments } from "@/server/queries/student";
 
 export const metadata: Metadata = { title: "Student dashboard | SCAS" };
 
-/** UI2: counters, assigned lecturer (FR03) and open slots (FR04). */
+/** UI2: counters, the next appointment, and the lecturers a student can book (FR03, FR04). */
 export default async function StudentDashboard() {
   const user = await requireRole("STUDENT");
-  const [student, stats, upcoming] = await Promise.all([
-    getAssignedLecturer(user.id),
+  const [lecturers, stats, upcoming] = await Promise.all([
+    getLecturerDirectory(),
     getDashboardStats(user.id),
     getMyAppointments(user.id, "upcoming"),
   ]);
-  const lecturer = student?.lecturer ?? null;
-  const slots = lecturer ? toSlotOptions(await getAvailableSlots(lecturer.lecturerId, lecturer.limit)) : [];
+  // Lecturers with open slots first, so the dashboard shows who can actually be booked.
+  const bookableFirst = [...lecturers].sort((a, b) => Number(b.openSlots > 0) - Number(a.openSlots > 0));
   const next = upcoming.find((a) => a.status === "APPROVED" || a.status === "RESCHEDULED" || a.status === "PENDING");
 
   const counters = [
@@ -35,7 +32,7 @@ export default async function StudentDashboard() {
   ];
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <div>
         <p className="text-sm text-muted">{formatLongDate(malaysiaToday())}</p>
         <h2 className="font-display text-title font-bold">Hi, {user.name.split(" ")[0]}</h2>
@@ -71,34 +68,22 @@ export default async function StudentDashboard() {
         </Link>
       )}
 
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
-        <LecturerCard
-          lecturer={lecturer}
+      <Card>
+        <CardHeader
+          title="Book a consultation"
+          description="Choose any lecturer to see their open slots."
           action={
-            lecturer && (
-              <Link href="/student/book" className={buttonClasses({ className: "w-full sm:w-auto" })}>
-                Book an appointment
+            lecturers.length > 4 && (
+              <Link href="/student/lecturers" className="text-sm font-semibold text-accent-ink hover:underline">
+                See all
               </Link>
             )
           }
         />
-        {lecturer && (
-          <Card>
-            <CardHeader
-              title="Open slots"
-              description="Pick a slot to book it. Crossed-out slots are taken."
-              action={
-                <Link href="/student/lecturer" className="text-sm font-semibold text-accent-ink hover:underline">
-                  See all
-                </Link>
-              }
-            />
-            <CardBody>
-              <SlotBoard slots={slots} limit={6} />
-            </CardBody>
-          </Card>
-        )}
-      </div>
+        <CardBody>
+          <LecturerDirectory lecturers={bookableFirst} limit={4} />
+        </CardBody>
+      </Card>
     </div>
   );
 }

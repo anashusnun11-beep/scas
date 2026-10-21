@@ -4,9 +4,10 @@ import { DEFAULT_LIMIT } from "@/lib/limits";
 import { prisma } from "@/server/db";
 
 // Read side of the student module. Names follow the SDD controllers:
-// LecturerController.getAssignedLecturer, SlotController.getAvailableSlots,
+// LecturerController.getLecturerList, SlotController.getAvailableSlots,
 // AppointmentController.getMyAppointments / getHistory, NoteController.getAppointment.
-// Every function takes the signed-in user's id, so a student can only ever read their own data (NFR03).
+// Functions that read appointments take the signed-in user's id, so a student can only ever read their own (NFR03).
+// Students may consult any active lecturer (decision 2026-10-21); students.lecturer_id is no longer used.
 
 /** How far ahead students can see and book slots. */
 export const BOOKING_WINDOW_DAYS = 28;
@@ -17,10 +18,19 @@ const lecturerSelect = {
   officeRoom: true,
   position: true,
   user: { select: { name: true, email: true, phoneNo: true } },
+  limit: { select: { isEnabled: true, minNoticeHours: true } },
 } as const;
 
-/** The student record for a signed-in user, with their assigned lecturer (FR03). */
-export async function getAssignedLecturer(userId: number) {
+type NoticeLimit = { isEnabled: boolean; minNoticeHours: number } | null;
+
+/** The minimum notice in ms (0 when the lecturer has switched limits off); no saved limits = defaults. */
+function noticeFor(limit: NoticeLimit) {
+  const effective = limit ?? DEFAULT_LIMIT;
+  return { hours: effective.minNoticeHours, ms: effective.isEnabled ? effective.minNoticeHours * 60 * 60 * 1000 : 0 };
+}
+
+/** The signed-in student's own record (profile page). */
+export function getStudentProfile(userId: number) {
   return prisma.student.findUnique({
     where: { userId },
     select: {
@@ -29,12 +39,58 @@ export async function getAssignedLecturer(userId: number) {
       faculty: true,
       semester: true,
       user: { select: { name: true, email: true, phoneNo: true } },
-      lecturer: { select: { ...lecturerSelect, limit: { select: { isEnabled: true, minNoticeHours: true } } } },
     },
   });
 }
 
-export type StudentWithLecturer = NonNullable<Awaited<ReturnType<typeof getAssignedLecturer>>>;
+/** FR03: one active lecturer's details, or null (unknown or deactivated). */
+export function getLecturerForStudent(lecturerId: string) {
+  return prisma.lecturer.findFirst({
+    where: { lecturerId, user: { accountStatus: "ACTIVE" } },
+    select: lecturerSelect,
+  });
+}
+
+export type LecturerDetails = NonNullable<Awaited<ReturnType<typeof getLecturerForStudent>>>;
+
+/** The lecturer a slot belongs to, so `/student/book?slot=` can open the right lecturer's form. */
+export async function getSlotLecturerId(slotId: number) {
+  if (!Number.isInteger(slotId) || slotId < 1) return null;
+  const slot = await prisma.availabilitySlot.findUnique({ where: { id: slotId }, select: { lecturerId: true } });
+  return slot?.lecturerId ?? null;
+}
+
+/**
+ * FR03 for every lecturer: all ACTIVE lecturers (including those with no slots yet), each with how many
+ * slots a student can book right now and the earliest one. Sorted by name.
+ */
+export async function getLecturerDirectory(now = new Date()) {
+  const today = malaysiaToday(now);
+  const lecturers = await prisma.lecturer.findMany({
+    where: { user: { accountStatus: "ACTIVE" } },
+    orderBy: { user: { name: "asc" } },
+    select: lecturerSelect,
+  });
+  const slots = await prisma.availabilitySlot.findMany({
+    where: {
+      lecturerId: { in: lecturers.map((l) => l.lecturerId) },
+      slotStatus: "AVAILABLE",
+      slotDate: { gte: today, lt: addDays(today, BOOKING_WINDOW_DAYS) },
+    },
+    orderBy: [{ slotDate: "asc" }, { startTime: "asc" }],
+    select: { lecturerId: true, slotDate: true, startTime: true, endTime: true },
+  });
+
+  return lecturers.map((lecturer) => {
+    const notice = noticeFor(lecturer.limit);
+    const open = slots.filter(
+      (s) => s.lecturerId === lecturer.lecturerId && slotStartsAt(s.slotDate, s.startTime).getTime() - now.getTime() >= notice.ms,
+    );
+    return { ...lecturer, openSlots: open.length, nextSlot: open[0] ?? null };
+  });
+}
+
+export type LecturerDirectoryEntry = Awaited<ReturnType<typeof getLecturerDirectory>>[number];
 
 export type SlotView = {
   id: number;
@@ -52,11 +108,7 @@ export type SlotView = {
  * AVAILABLE slots are bookable; BOOKED ones are returned so the UI can show them crossed out
  * (SDD 6.2). Past slots and UNAVAILABLE ones are left out.
  */
-export async function getAvailableSlots(
-  lecturerId: string,
-  limit: { isEnabled: boolean; minNoticeHours: number } | null,
-  now = new Date(),
-): Promise<SlotView[]> {
+export async function getAvailableSlots(lecturerId: string, limit: NoticeLimit, now = new Date()): Promise<SlotView[]> {
   const today = malaysiaToday(now);
   const slots = await prisma.availabilitySlot.findMany({
     where: {
@@ -68,13 +120,12 @@ export async function getAvailableSlots(
     select: { id: true, slotDate: true, startTime: true, endTime: true, location: true, slotStatus: true },
   });
 
-  const effective = limit ?? DEFAULT_LIMIT;
-  const noticeMs = effective.isEnabled ? effective.minNoticeHours * 60 * 60 * 1000 : 0;
+  const notice = noticeFor(limit);
   return slots
     .filter((s) => slotStartsAt(s.slotDate, s.startTime) > now)
     .map((s) => {
       const startsAt = slotStartsAt(s.slotDate, s.startTime);
-      const tooSoon = s.slotStatus === "AVAILABLE" && startsAt.getTime() - now.getTime() < noticeMs;
+      const tooSoon = s.slotStatus === "AVAILABLE" && startsAt.getTime() - now.getTime() < notice.ms;
       return {
         id: s.id,
         slotDate: s.slotDate,
@@ -82,7 +133,7 @@ export async function getAvailableSlots(
         endTime: s.endTime,
         location: s.location,
         status: s.slotStatus as "AVAILABLE" | "BOOKED",
-        closedReason: tooSoon ? `Bookings close ${effective.minNoticeHours} hours before` : undefined,
+        closedReason: tooSoon ? `Bookings close ${notice.hours} hours before` : undefined,
       };
     });
 }

@@ -27,7 +27,7 @@ export default async function LecturersPage({ searchParams }: { searchParams: Pr
       <ListToolbar query={query} placeholder="Search lecturer ID, name, e-mail or department" action={add} />
       {rows.length === 0 ? (
         <EmptyState icon={ChalkboardTeacherIcon} title={query.q ? `No lecturers match "${query.q}"` : "No lecturers here"}>
-          {query.q ? "Check the spelling, or search by lecturer ID." : "Add a lecturer so students can be assigned to them."}
+          {query.q ? "Check the spelling, or search by lecturer ID." : "Add a lecturer so students can book consultations with them."}
         </EmptyState>
       ) : (
         <Card>
@@ -48,7 +48,7 @@ export default async function LecturersPage({ searchParams }: { searchParams: Pr
                     {l.officeRoom ? `, ${l.officeRoom}` : ""}
                   </span>
                   <span className="col-span-2 row-start-4 text-sm md:col-span-1 md:col-start-4 md:row-start-1">
-                    {l._count.students} student{l._count.students === 1 ? "" : "s"}
+                    {l._count.appointments} appointment{l._count.appointments === 1 ? "" : "s"}
                   </span>
                   <span className="col-start-2 row-start-1 flex items-center gap-2 justify-self-end md:col-start-5">
                     <AccountChip status={l.user.accountStatus} />

@@ -29,16 +29,6 @@ async function assertEmailFree(tx: Tx, email: string, exceptUserId?: number) {
   if (taken && taken.id !== exceptUserId) throw new AdminError("duplicate", "This e-mail is already used by another account.", "email");
 }
 
-/** The assigned lecturer must exist and be ACTIVE (decision 2026-10-14). */
-async function assertAssignable(tx: Tx, lecturerId: string | undefined) {
-  if (!lecturerId) return null;
-  const lecturer = await tx.lecturer.findUnique({ where: { lecturerId }, select: { user: { select: { accountStatus: true } } } });
-  if (!lecturer || lecturer.user.accountStatus !== "ACTIVE") {
-    throw new AdminError("invalid", "Choose an active lecturer.", "lecturerId");
-  }
-  return lecturerId;
-}
-
 /** The P2002 safety net: two admins saving the same ID or e-mail at the same moment. */
 function duplicateFrom(error: unknown, idField: "studentId" | "lecturerId"): never {
   if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
@@ -58,15 +48,12 @@ export async function createStudent(input: CreateStudentInput) {
       if (await tx.student.findUnique({ where: { studentId: input.studentId }, select: { studentId: true } })) {
         throw new AdminError("duplicate", "This student ID is already registered.", "studentId");
       }
-      const lecturerId = await assertAssignable(tx, input.lecturerId);
       const student = await tx.student.create({
         data: {
           studentId: input.studentId,
           programme: parseStudentId(input.studentId)?.programme,
           semester: input.semester ?? null,
           faculty: input.faculty ?? null,
-          // connect, not the scalar: Prisma can't mix a scalar FK with the nested user create
-          ...(lecturerId ? { lecturer: { connect: { lecturerId } } } : {}),
           user: { create: { name: input.name, email: input.email, phoneNo: input.phoneNo ?? null, passwordHash, role: "STUDENT" as const } },
         },
         select: { studentId: true },
@@ -98,8 +85,6 @@ export async function updateStudent(input: UpdateStudentInput) {
           throw new AdminError("duplicate", "This student ID is already registered.", "studentId");
         }
       }
-      const lecturerId = await assertAssignable(tx, input.lecturerId);
-
       await tx.user.update({ where: { id: current.userId }, data: { name: input.name, email: input.email, phoneNo: input.phoneNo ?? null } });
       return tx.student.update({
         where: { studentId: current.studentId },
@@ -108,7 +93,6 @@ export async function updateStudent(input: UpdateStudentInput) {
           programme: parseStudentId(input.studentId)?.programme,
           semester: input.semester ?? null,
           faculty: input.faculty ?? null,
-          lecturerId,
         },
         select: { studentId: true },
       });
@@ -221,23 +205,18 @@ export async function updateLecturer(input: UpdateLecturerInput) {
   }
 }
 
-/** What stops a lecturer being deactivated (decision log): active appointments and assigned students. */
+/**
+ * What stops a lecturer being deactivated (decision log): active appointments. Students are no longer
+ * assigned to one lecturer (decision 2026-10-21), so they don't block it.
+ */
 export async function lecturerBlockers(lecturerId: string, tx: Tx | typeof prisma = prisma) {
-  const [activeAppointments, assignedStudents] = await Promise.all([
-    tx.appointment.count({ where: { lecturerId, status: { in: [...ACTIVE_STATUSES] } } }),
-    tx.student.count({ where: { lecturerId } }),
-  ]);
-  return { activeAppointments, assignedStudents };
+  const activeAppointments = await tx.appointment.count({ where: { lecturerId, status: { in: [...ACTIVE_STATUSES] } } });
+  return { activeAppointments };
 }
 
-export function blockerMessage(name: string, b: { activeAppointments: number; assignedStudents: number }) {
-  const parts: string[] = [];
-  if (b.activeAppointments) parts.push(`${b.activeAppointments} active appointment${b.activeAppointments === 1 ? "" : "s"}`);
-  if (b.assignedStudents) parts.push(`${b.assignedStudents} assigned student${b.assignedStudents === 1 ? "" : "s"}`);
-  const steps: string[] = [];
-  if (b.assignedStudents) steps.push(`reassign ${b.assignedStudents === 1 ? "the student" : "the students"} to another lecturer`);
-  if (b.activeAppointments) steps.push(`have the lecturer complete, reject or cancel ${b.activeAppointments === 1 ? "that appointment" : "those appointments"}`);
-  return `${name} still has ${parts.join(" and ")}. To deactivate, first ${steps.join(" and ")}.`;
+export function blockerMessage(name: string, b: { activeAppointments: number }) {
+  const n = b.activeAppointments;
+  return `${name} still has ${n} active appointment${n === 1 ? "" : "s"}. To deactivate, first have the lecturer complete, reject or cancel ${n === 1 ? "that appointment" : "those appointments"}.`;
 }
 
 /** LecturerController.deleteLecturer = deactivate (SD12 opt, BR8), blocked while anything still depends on them. */
@@ -247,7 +226,7 @@ export async function deactivateLecturer(lecturerId: string) {
     if (!lecturer) throw new AdminError("not-found", "This lecturer no longer exists.");
     await lockLecturer(tx, lecturerId); // no booking can slip in between the check and the update
     const blockers = await lecturerBlockers(lecturerId, tx);
-    if (blockers.activeAppointments || blockers.assignedStudents) {
+    if (blockers.activeAppointments) {
       throw new AdminError("blocked", blockerMessage(lecturer.user.name, blockers));
     }
     await tx.user.update({ where: { id: lecturer.userId }, data: { accountStatus: "INACTIVE" } });

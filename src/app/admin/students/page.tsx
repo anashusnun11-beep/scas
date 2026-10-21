@@ -36,21 +36,18 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
               <li key={s.studentId}>
                 <Link
                   href={`/admin/students/${encodeURIComponent(s.studentId)}`}
-                  className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-5 py-3.5 transition-colors duration-150 hover:bg-surface-2/60 md:grid-cols-[9rem_minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_auto]"
+                  className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-5 py-3.5 transition-colors duration-150 hover:bg-surface-2/60 md:grid-cols-[9rem_minmax(0,1.4fr)_minmax(0,1fr)_auto]"
                 >
                   <span className="col-start-1 row-start-1 font-mono text-sm font-semibold">{s.studentId}</span>
                   <span className="col-span-2 row-start-2 min-w-0 md:col-span-1 md:col-start-2 md:row-start-1">
                     <span className="block truncate font-medium">{s.user.name}</span>
                     <span className="block truncate text-sm text-muted">{s.user.email}</span>
                   </span>
-                  <span className="hidden truncate text-sm text-muted md:col-start-3 md:row-start-1 md:block">
+                  <span className="col-span-2 row-start-3 truncate text-sm text-muted md:col-span-1 md:col-start-3 md:row-start-1">
                     {s.programme ?? "No programme"}
                     {s.semester ? `, sem ${s.semester}` : ""}
                   </span>
-                  <span className="col-span-2 row-start-3 truncate text-sm md:col-span-1 md:col-start-4 md:row-start-1">
-                    {s.lecturer ? s.lecturer.user.name : <span className="font-semibold text-accent-ink">No lecturer</span>}
-                  </span>
-                  <span className="col-start-2 row-start-1 flex items-center gap-2 justify-self-end md:col-start-5">
+                  <span className="col-start-2 row-start-1 flex items-center gap-2 justify-self-end md:col-start-4">
                     <AccountChip status={s.user.accountStatus} />
                     <CaretRightIcon aria-hidden className="size-4 text-muted" />
                   </span>

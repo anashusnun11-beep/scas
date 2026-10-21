@@ -1,6 +1,7 @@
 "use client";
 
 import { InfoIcon } from "@phosphor-icons/react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
@@ -71,7 +72,15 @@ export function BookingForm({
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
       <Card>
-        <CardHeader title="Book a consultation" description={`With ${lecturerName}. Fields marked * are required.`} />
+        <CardHeader
+          title="Book a consultation"
+          description={`Step 2 of 2: with ${lecturerName}. Fields marked * are required.`}
+          action={
+            <Link href="/student/book" className="text-sm font-semibold text-accent-ink hover:underline">
+              Change lecturer
+            </Link>
+          }
+        />
         <form method="post" onSubmit={onSubmit} onChange={clearErrorOnEdit(setErrors)} noValidate className="grid gap-6 p-5">
           {message && <FormMessage tone="error">{message}</FormMessage>}
 
@@ -80,7 +89,7 @@ export function BookingForm({
             label="Student ID"
             required
             error={errors.studentId}
-            hint={`Type your own student ID, e.g. ${STUDENT_ID_EXAMPLE}. It is checked before the booking is saved.`}
+            hint={`Type your own student ID, e.g. ${STUDENT_ID_EXAMPLE} (the "-" is optional). It is checked before the booking is saved.`}
           >
             <Input name="studentId" autoComplete="off" autoCapitalize="characters" spellCheck={false} maxLength={20} className="max-w-xs font-mono" />
           </Field>

@@ -1,5 +1,6 @@
 import type { AccountStatus, Prisma } from "@/generated/prisma/client";
 import { malaysiaToday, weekRange } from "@/lib/dates";
+import { parseStudentId } from "@/lib/student-id";
 import { prisma } from "@/server/db";
 
 // Read side of the admin module (StudentController.getStudentList, LecturerController.getLecturerList).
@@ -22,11 +23,12 @@ export function parseListQuery(params: Record<string, string | string[] | undefi
 
 const contains = (q: string) => ({ contains: q, mode: "insensitive" as const });
 
-/** FR14 list + search (SD11 steps 2-6). Search matches student ID, name or e-mail. */
+/** FR14 list + search (SD11 steps 2-6). Search matches student ID (with or without the dash), name or e-mail. */
 export async function getStudentList({ q, status, page }: ListQuery) {
+  const idQuery = parseStudentId(q)?.id ?? q;
   const where: Prisma.StudentWhereInput = {
     ...(status === "ALL" ? {} : { user: { accountStatus: status } }),
-    ...(q ? { OR: [{ studentId: contains(q) }, { user: { name: contains(q) } }, { user: { email: contains(q) } }] } : {}),
+    ...(q ? { OR: [{ studentId: contains(idQuery) }, { user: { name: contains(q) } }, { user: { email: contains(q) } }] } : {}),
   };
   const [total, rows] = await Promise.all([
     prisma.student.count({ where }),
@@ -40,7 +42,6 @@ export async function getStudentList({ q, status, page }: ListQuery) {
         programme: true,
         semester: true,
         user: { select: { id: true, name: true, email: true, accountStatus: true } },
-        lecturer: { select: { lecturerId: true, user: { select: { name: true } } } },
       },
     }),
   ]);
@@ -67,7 +68,7 @@ export async function getLecturerList({ q, status, page }: ListQuery) {
         department: true,
         officeRoom: true,
         user: { select: { id: true, name: true, email: true, accountStatus: true } },
-        _count: { select: { students: true } },
+        _count: { select: { appointments: true } },
       },
     }),
   ]);
@@ -83,7 +84,6 @@ export function getStudentForEdit(studentId: string) {
       programme: true,
       semester: true,
       faculty: true,
-      lecturerId: true,
       user: { select: { id: true, name: true, email: true, phoneNo: true, accountStatus: true, createdAt: true } },
       _count: { select: { appointments: true } },
     },
@@ -105,26 +105,16 @@ export function getLecturerForEdit(lecturerId: string) {
   });
 }
 
-/** Lecturers a student can be assigned to: active ones only, with their department (decision 2026-10-14). */
-export function getLecturerOptions() {
-  return prisma.lecturer.findMany({
-    where: { user: { accountStatus: "ACTIVE" } },
-    orderBy: { user: { name: "asc" } },
-    select: { lecturerId: true, department: true, user: { select: { name: true } } },
-  });
-}
-
 /** Admin dashboard counters. "This week" counts appointments by slot date, leaving out rejected and cancelled ones. */
 export async function getAdminDashboard(now = new Date()) {
   const week = weekRange(malaysiaToday(now));
-  const [students, lecturers, thisWeek, pending, unassigned] = await Promise.all([
+  const [students, lecturers, thisWeek, pending] = await Promise.all([
     prisma.student.count({ where: { user: { accountStatus: "ACTIVE" } } }),
     prisma.lecturer.count({ where: { user: { accountStatus: "ACTIVE" } } }),
     prisma.appointment.count({
       where: { status: { notIn: ["REJECTED", "CANCELLED"] }, slot: { slotDate: { gte: week.start, lt: week.end } } },
     }),
     prisma.appointment.count({ where: { status: "PENDING" } }),
-    prisma.student.count({ where: { lecturerId: null, user: { accountStatus: "ACTIVE" } } }),
   ]);
-  return { students, lecturers, thisWeek, pending, unassigned, weekStart: week.start };
+  return { students, lecturers, thisWeek, pending, weekStart: week.start };
 }
