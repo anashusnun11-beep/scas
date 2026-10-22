@@ -42,7 +42,6 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
                 phoneNo: student.user.phoneNo ?? "",
                 studentId: student.studentId,
                 semester: student.semester ? String(student.semester) : "",
-                faculty: student.faculty ?? "",
               }}
             />
           </CardBody>

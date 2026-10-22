@@ -36,7 +36,6 @@ export function getStudentProfile(userId: number) {
     select: {
       studentId: true,
       programme: true,
-      faculty: true,
       semester: true,
       user: { select: { name: true, email: true, phoneNo: true } },
     },

@@ -19,7 +19,6 @@ export type StudentFormValues = {
   phoneNo: string;
   studentId: string;
   semester: string;
-  faculty: string;
 };
 
 /** FR14 add / edit student (UI10, SD11). «include» Insert Student ID uses the KPMB format rule. */
@@ -38,7 +37,7 @@ export function StudentForm({
   const [errors, setErrors] = useState<FieldErrors<StudentFormInput>>({});
   const [message, setMessage] = useState<string>();
   const [parsedId, setParsedId] = useState(() => (initial ? parseStudentId(initial.studentId) : null));
-  const v = initial ?? { name: "", email: "", phoneNo: "", studentId: "", semester: "", faculty: "" };
+  const v = initial ?? { name: "", email: "", phoneNo: "", studentId: "", semester: "" };
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -121,9 +120,6 @@ export function StudentForm({
               </option>
             ))}
           </Select>
-        </Field>
-        <Field id="student-faculty" label="Faculty" error={errors.faculty} hint="Optional.">
-          <Input name="faculty" defaultValue={v.faculty} autoComplete="off" />
         </Field>
         {mode === "create" && (
           <div className="md:col-span-2">

@@ -83,7 +83,6 @@ export function getStudentForEdit(studentId: string) {
       studentId: true,
       programme: true,
       semester: true,
-      faculty: true,
       user: { select: { id: true, name: true, email: true, phoneNo: true, accountStatus: true, createdAt: true } },
       _count: { select: { appointments: true } },
     },

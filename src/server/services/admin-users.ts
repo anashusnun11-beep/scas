@@ -53,7 +53,6 @@ export async function createStudent(input: CreateStudentInput) {
           studentId: input.studentId,
           programme: parseStudentId(input.studentId)?.programme,
           semester: input.semester ?? null,
-          faculty: input.faculty ?? null,
           user: { create: { name: input.name, email: input.email, phoneNo: input.phoneNo ?? null, passwordHash, role: "STUDENT" as const } },
         },
         select: { studentId: true },
@@ -92,7 +91,6 @@ export async function updateStudent(input: UpdateStudentInput) {
           studentId: input.studentId,
           programme: parseStudentId(input.studentId)?.programme,
           semester: input.semester ?? null,
-          faculty: input.faculty ?? null,
         },
         select: { studentId: true },
       });

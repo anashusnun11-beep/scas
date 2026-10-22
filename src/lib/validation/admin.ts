@@ -38,7 +38,6 @@ const studentFields = {
   phoneNo,
   studentId: studentIdSchema,
   semester: optional(z.coerce.number().int("Choose a semester.").min(1, "Choose a semester.").max(9, "Choose a semester.")),
-  faculty: optional(z.string().trim().max(100, "Faculty must be 100 characters or fewer.")),
 };
 
 /** FR14 add student (with a temporary password). */
