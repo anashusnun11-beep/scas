@@ -11,6 +11,7 @@ import { fieldErrors, loginSchema, type FieldErrors, type LoginInput } from "@/l
 import { loginAction } from "@/server/actions/auth";
 import { FormMessage } from "@/components/ui/form-message";
 import { PasswordInput } from "./password-input";
+import { useResetWhenHidden } from "./use-reset-when-hidden";
 
 // How long the door gets to open before we leave the page. Short on purpose: the form stays fast.
 const DOOR_BEAT_MS = 650;
@@ -21,11 +22,21 @@ export type LoginNotice = { tone: "success" | "info"; text: string };
 export function LoginForm({ callbackUrl, notice }: { callbackUrl?: string; notice?: LoginNotice }) {
   const router = useRouter();
   const reduce = useReducedMotion();
-  const { openDoor } = useDoor();
+  const { openDoor, closeDoor } = useDoor();
   const [pending, startTransition] = useTransition();
   const [errors, setErrors] = useState<FieldErrors<LoginInput>>({});
   const [message, setMessage] = useState<string>();
   const [entering, setEntering] = useState(false);
+  // Bumping the key remounts the form: empty inputs, password hidden again.
+  const [formKey, setFormKey] = useState(0);
+
+  useResetWhenHidden(() => {
+    setFormKey((k) => k + 1);
+    setEntering(false);
+    setErrors({});
+    setMessage(undefined);
+    closeDoor();
+  });
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -57,7 +68,7 @@ export function LoginForm({ callbackUrl, notice }: { callbackUrl?: string; notic
   const busy = pending || entering;
 
   return (
-    <form method="post" onSubmit={onSubmit} onChange={clearErrorOnEdit(setErrors)} noValidate className="grid gap-5">
+    <form key={formKey} method="post" onSubmit={onSubmit} onChange={clearErrorOnEdit(setErrors)} noValidate className="grid gap-5">
       {message ? (
         <FormMessage tone="error">{message}</FormMessage>
       ) : notice ? (

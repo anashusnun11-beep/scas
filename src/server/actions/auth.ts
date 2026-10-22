@@ -87,7 +87,15 @@ export async function loginAction(formData: FormData): Promise<ActionResult<Logi
   return { ok: true, redirectTo: safeRedirect(formData.get("callbackUrl"), roleHome[user.role]) };
 }
 
-/** FR02: logout from the sidebar. */
+/** FR02: logout from the sidebar. The form's no-JavaScript path: clears the session and redirects. */
 export async function logoutAction() {
   await signOut({ redirectTo: "/login" });
+}
+
+/**
+ * FR02 logout with JavaScript: clears the session only; the button then reloads /login itself, so no
+ * client state of the signed-out user (forms, cached pages) survives (Next.js "State and authentication").
+ */
+export async function signOutAction() {
+  await signOut({ redirect: false });
 }

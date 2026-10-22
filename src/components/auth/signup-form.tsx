@@ -10,6 +10,7 @@ import { fieldErrors, signupSchema, type FieldErrors, type SignupInput } from "@
 import { signUpAction } from "@/server/actions/auth";
 import { FormMessage } from "@/components/ui/form-message";
 import { PasswordInput } from "./password-input";
+import { useResetWhenHidden } from "./use-reset-when-hidden";
 
 /** FR01: students register themselves. Lecturers and admins are created by the admin. */
 export function SignupForm() {
@@ -18,6 +19,15 @@ export function SignupForm() {
   const [errors, setErrors] = useState<FieldErrors<SignupInput>>({});
   const [message, setMessage] = useState<string>();
   const [studentId, setStudentId] = useState<ParsedStudentId | null>(null);
+  // A finished or abandoned sign up must not keep the typed password around for the next visitor.
+  const [formKey, setFormKey] = useState(0);
+
+  useResetWhenHidden(() => {
+    setFormKey((k) => k + 1);
+    setErrors({});
+    setMessage(undefined);
+    setStudentId(null);
+  });
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -44,7 +54,7 @@ export function SignupForm() {
   }
 
   return (
-    <form method="post" onSubmit={onSubmit} onChange={clearErrorOnEdit(setErrors)} noValidate className="grid gap-5">
+    <form key={formKey} method="post" onSubmit={onSubmit} onChange={clearErrorOnEdit(setErrors)} noValidate className="grid gap-5">
       {message && <FormMessage tone="error">{message}</FormMessage>}
 
       <Field id="signup-name" label="Full name" required error={errors.name}>
