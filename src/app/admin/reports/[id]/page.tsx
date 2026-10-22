@@ -2,6 +2,7 @@ import { ArrowLeftIcon, FileMagnifyingGlassIcon } from "@phosphor-icons/react/ss
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { DeleteReportButton } from "@/components/admin/delete-report-button";
 import { ReportChart } from "@/components/admin/report-chart";
 import { ReportSummary } from "@/components/admin/report-summary";
 import { ReportTable } from "@/components/admin/report-table";
@@ -37,7 +38,10 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
           <ArrowLeftIcon aria-hidden className="size-4" />
           All reports
         </Link>
-        {data.total > 0 && <PrintButton label="Print report" />}
+        <div className="flex flex-wrap gap-2">
+          <DeleteReportButton reportId={report.id} code={reportCode(report.id)} />
+          {data.total > 0 && <PrintButton label="Print report" />}
+        </div>
       </div>
 
       <article

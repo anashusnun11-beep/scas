@@ -61,3 +61,12 @@ export async function generateReport(userId: number, input: ReportInput): Promis
   });
   return { empty: false, reportId: report.id };
 }
+
+/**
+ * Delete a saved report (decision 2026-10-23). A report row holds only its type and period, and nothing
+ * else refers to it, so removing it changes no appointment or figure. Returns false if it was already gone.
+ */
+export async function deleteReport(reportId: number) {
+  const { count } = await prisma.report.deleteMany({ where: { id: reportId } });
+  return count === 1;
+}
