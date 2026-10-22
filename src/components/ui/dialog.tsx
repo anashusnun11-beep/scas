@@ -55,11 +55,11 @@ export function Dialog({
         <div className="p-6">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <h2 id={titleId} className="font-display text-heading font-semibold">
+              <h2 id={titleId} className="[overflow-wrap:anywhere] font-display text-heading font-semibold">
                 {title}
               </h2>
               {description && (
-                <div id={descriptionId} className="mt-1 text-sm text-muted">
+                <div id={descriptionId} className="mt-1 [overflow-wrap:anywhere] text-sm text-muted">
                   {description}
                 </div>
               )}

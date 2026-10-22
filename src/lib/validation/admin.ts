@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { passwordSchema } from "./auth";
+import { personNameSchema } from "./name";
 import { studentIdSchema } from "./student-id";
 
 // FR14 / FR15 admin forms. Shared by the forms (client) and the admin actions (server).
@@ -7,7 +8,7 @@ import { studentIdSchema } from "./student-id";
 /** Empty form fields become undefined, so optional fields stay optional. */
 const optional = <T extends z.ZodType>(schema: T) => z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), schema.optional());
 
-const name = z.string().trim().min(3, "Enter the full name.").max(100, "Name must be 100 characters or fewer.");
+const name = personNameSchema;
 const email = z
   .string()
   .trim()

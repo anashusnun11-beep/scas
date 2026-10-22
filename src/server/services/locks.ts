@@ -12,6 +12,15 @@ export async function lockLecturer(tx: Prisma.TransactionClient, lecturerId: str
 }
 
 /**
+ * Serialises one student's bookings across lecturers, so two bookings at the same time with different
+ * lecturers can't both pass the clash check (decision 2026-10-23). Always take it BEFORE lockLecturer,
+ * in every transaction that takes both, so two transactions never wait on each other in a circle.
+ */
+export async function lockStudent(tx: Prisma.TransactionClient, studentId: string) {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`student:${studentId}`}))`;
+}
+
+/**
  * Options for every transaction that takes the lecturer lock. Bookings for one lecturer queue on the
  * lock, so allow time to get a connection (maxWait) and to finish behind others (timeout).
  * Prisma's defaults (2 s / 5 s) were too tight against the hosted database under concurrent bookings.

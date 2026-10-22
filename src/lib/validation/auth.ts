@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { personNameSchema } from "./name";
 import { studentIdSchema } from "./student-id";
 
 // Shared by the forms (client) and the server actions / Auth.js authorize (server).
@@ -26,7 +27,7 @@ export const passwordSchema = z
 
 export const signupSchema = z
   .object({
-    name: z.string().trim().min(3, "Enter your full name.").max(100, "Name must be 100 characters or fewer."),
+    name: personNameSchema,
     email,
     studentId: studentIdSchema,
     password: passwordSchema,

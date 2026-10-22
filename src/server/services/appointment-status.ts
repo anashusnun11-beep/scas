@@ -2,7 +2,8 @@ import type { AppointmentStatus } from "@/generated/prisma/client";
 import { ACTIVE_STATUSES } from "@/lib/appointment";
 import { slotStartsAt } from "@/lib/dates";
 import { prisma } from "@/server/db";
-import { LOCKED_TX, lockLecturer } from "./locks";
+import { findStudentClash } from "./booking";
+import { LOCKED_TX, lockLecturer, lockStudent } from "./locks";
 
 // AppointmentController.updateStatus / reschedule / cancelAppointment and NoteController.saveNote
 // (FR10, FR11, FR12; SD7, SD8, SD9). Every change runs under the lecturer lock and only applies
@@ -95,10 +96,14 @@ export async function cancelAppointment(lecturerId: string, appointmentId: numbe
 /**
  * FR11 reschedule (SD8 steps 8-16, BR4): one transaction books the new slot, frees the old one and
  * marks the appointment RESCHEDULED. Allowed from PENDING, APPROVED and RESCHEDULED (decision 2026-10-14).
- * Consultation limits are not re-checked (decision log).
+ * Consultation limits are not re-checked (decision log), but the new time must not clash with the student's
+ * other consultations (decision 2026-10-23); the student lock is taken before the lecturer lock, as in booking.
  */
 export async function rescheduleAppointment(lecturerId: string, appointmentId: number, newSlotId: number, reason: string, now = new Date()) {
+  // The student never changes on an appointment, so it is safe to read before locking.
+  const owner = await prisma.appointment.findFirst({ where: { id: appointmentId, lecturerId }, select: { studentId: true } });
   return prisma.$transaction(async (tx) => {
+    if (owner) await lockStudent(tx, owner.studentId);
     await lockLecturer(tx, lecturerId);
     const a = await loadOwn(tx, lecturerId, appointmentId);
     requireStatus(a.status, ACTIVE_STATUSES);
@@ -109,6 +114,16 @@ export async function rescheduleAppointment(lecturerId: string, appointmentId: n
     }
     if (slotStartsAt(target.slotDate, target.startTime) <= now) {
       throw new AppointmentActionError("slot-invalid", "That slot has already started. Choose a later one.", "newSlotId");
+    }
+    const clash = await findStudentClash(tx, {
+      studentId: a.studentId,
+      slotDate: target.slotDate,
+      startTime: target.startTime,
+      endTime: target.endTime,
+      exceptAppointmentId: a.id,
+    });
+    if (clash) {
+      throw new AppointmentActionError("slot-invalid", `The student already has another consultation at that time (${clash}). Choose another slot.`, "newSlotId");
     }
     const claimed = await tx.availabilitySlot.updateMany({ where: { id: target.id, slotStatus: "AVAILABLE" }, data: { slotStatus: "BOOKED" } });
     if (claimed.count !== 1) {

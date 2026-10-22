@@ -86,12 +86,12 @@ export function AccountPanel({
   }
 
   return (
-    <div className="grid gap-4">
+    <div className="grid min-w-0 gap-4">
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm text-muted">Account</span>
         <AccountChip status={status} />
       </div>
-      <p className="text-sm text-muted">
+      <p className="[overflow-wrap:anywhere] text-sm text-muted">
         {status === "ACTIVE"
           ? `${name} can log in.`
           : `${name} can't log in. Their records and history are kept.`}

@@ -26,7 +26,7 @@ export default async function LecturerProfilePage() {
             {rows.map(([label, value]) => (
               <div key={label} className="grid gap-1 py-3 sm:grid-cols-[10rem_1fr]">
                 <dt className="text-sm text-muted">{label}</dt>
-                <dd className={label === "Lecturer ID" ? "font-mono" : undefined}>{value}</dd>
+                <dd className={label === "Lecturer ID" ? "font-mono" : "[overflow-wrap:anywhere]"}>{value}</dd>
               </div>
             ))}
           </dl>

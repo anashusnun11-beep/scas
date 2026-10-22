@@ -1,9 +1,10 @@
 import { Prisma } from "@/generated/prisma/client";
-import { LIMIT_STATUSES } from "@/lib/appointment";
+import { ACTIVE_STATUSES, appointmentCode, LIMIT_STATUSES } from "@/lib/appointment";
 import { formatSlotDate, slotStartsAt, weekRange } from "@/lib/dates";
 import { DEFAULT_LIMIT } from "@/lib/limits";
+import { formatMinutes, minutesOf, overlaps } from "@/lib/slot-time";
 import { prisma } from "@/server/db";
-import { LOCKED_TX, lockLecturer } from "./locks";
+import { LOCKED_TX, lockLecturer, lockStudent } from "./locks";
 
 type Tx = Prisma.TransactionClient;
 
@@ -15,7 +16,8 @@ export type BookingErrorCode =
   | "too-soon"
   | "day-full"
   | "week-full"
-  | "student-week-full";
+  | "student-week-full"
+  | "student-clash";
 
 /** A booking rule said no. `field` says which input the message belongs under. */
 export class BookingError extends Error {
@@ -84,6 +86,30 @@ export async function checkConsultationLimit(tx: Tx, c: LimitCheck) {
 }
 
 /**
+ * The student's own active appointment (any lecturer) that overlaps this time, if any. A student can't be
+ * in two consultations at once (decision 2026-10-23). Callers hold lockStudent, so the answer can't go stale.
+ */
+export async function findStudentClash(
+  tx: Tx,
+  c: { studentId: string; slotDate: Date; startTime: Date; endTime: Date; exceptAppointmentId?: number },
+) {
+  const sameDay = await tx.appointment.findMany({
+    where: {
+      studentId: c.studentId,
+      status: { in: [...ACTIVE_STATUSES] },
+      slot: { slotDate: c.slotDate },
+      ...(c.exceptAppointmentId ? { id: { not: c.exceptAppointmentId } } : {}),
+    },
+    select: { id: true, slot: { select: { startTime: true, endTime: true } }, lecturer: { select: { user: { select: { name: true } } } } },
+  });
+  const wanted = { start: minutesOf(c.startTime), end: minutesOf(c.endTime) };
+  const clash = sameDay.find((a) => overlaps(wanted, { start: minutesOf(a.slot.startTime), end: minutesOf(a.slot.endTime) }));
+  return clash
+    ? `${appointmentCode(clash.id)} with ${clash.lecturer.user.name}, ${formatMinutes(minutesOf(clash.slot.startTime))} - ${formatMinutes(minutesOf(clash.slot.endTime))}`
+    : null;
+}
+
+/**
  * AppointmentController.submitBooking (FR05, BR1, BR2), following SD3:
  * verify student ID -> check slot status -> check consultation limit -> insert PENDING -> slot BOOKED.
  *
@@ -93,6 +119,8 @@ export async function checkConsultationLimit(tx: Tx, c: LimitCheck) {
  * - the slot is only flipped with `updateMany ... where slot_status = AVAILABLE`, and anything but
  *   exactly 1 updated row rolls the whole booking back;
  * - the partial unique index on appointments(slot_id) is the last line of defence.
+ * A per-student lock (taken first) keeps one student from booking two overlapping slots with different
+ * lecturers at the same instant.
  */
 export async function submitBooking(input: { userId: number; studentIdInput: string; slotId: number; purpose: string }, now = new Date()) {
   const student = await prisma.student.findUnique({ where: { userId: input.userId }, select: { studentId: true } });
@@ -114,6 +142,7 @@ export async function submitBooking(input: { userId: number; studentIdInput: str
 
   try {
     return await prisma.$transaction(async (tx) => {
+      await lockStudent(tx, student.studentId);
       await lockLecturer(tx, lecturerId);
 
       // Re-read under the lock: deactivating a lecturer takes the same lock (SD12).
@@ -126,6 +155,11 @@ export async function submitBooking(input: { userId: number; studentIdInput: str
       const startsAt = slotStartsAt(slot.slotDate, slot.startTime);
       if (startsAt <= now) {
         throw new BookingError("slot-past", "That slot has already started. Please choose a later one.", "slotId");
+      }
+
+      const clash = await findStudentClash(tx, { studentId: student.studentId, slotDate: slot.slotDate, startTime: slot.startTime, endTime: slot.endTime });
+      if (clash) {
+        throw new BookingError("student-clash", `You already have a consultation at that time (${clash}). Choose another slot.`, "slotId");
       }
 
       await checkConsultationLimit(tx, { lecturerId, lecturerName, studentId: student.studentId, slotDate: slot.slotDate, startsAt, now });
