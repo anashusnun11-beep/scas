@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
- * SCAS design tokens (direction: Lampu Pejabat). See DESIGN.md.
+ * SCAS design tokens (direction: Lampu Pejabat).
  * Three layers: primitive (raw values) -> semantic (purpose, swaps per theme) -> component.
  * Components only use semantic/component tokens, never primitives or raw hex.
  */
@@ -81,7 +81,7 @@
 
   /* Chart fills per status (reports). Mid-tone steps of the same hue families as --st-*, validated as a
      categorical palette in this order: pending, rescheduled, approved, completed, rejected, cancelled.
-     Cancelled stays a deliberate neutral grey (it means "nothing happened"). See DESIGN.md 3.5. */
+     Cancelled stays a deliberate neutral grey (it means "nothing happened"). */
   --chart-pending: #c47600;
   --chart-rescheduled: #5146d8;
   --chart-approved: #23955a;

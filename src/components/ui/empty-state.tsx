@@ -2,7 +2,7 @@ import type { Icon } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
-/** Says what is missing and what to do next (DESIGN.md 8.1). */
+/** Says what is missing and what to do next. */
 export function EmptyState({
   icon: IconComponent,
   title,

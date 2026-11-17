@@ -1,5 +1,5 @@
 // npm run db:backup: a full copy of the SCAS database in backups/ (pg_dump custom format).
-// NFR10, see docs/BACKUP.md. The connection string is read from .env and never printed.
+// NFR10. The connection string is read from .env and never printed.
 import "dotenv/config";
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, rmSync, statSync } from "node:fs";

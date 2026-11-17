@@ -17,8 +17,8 @@ function subscribe(onChange: () => void) {
 
 /**
  * Fallback for error.tsx / global-error.tsx: a page or a form action failed in a way the form couldn't
- * explain (lost database connection, timeout, server error). Says what happened and what to do next
- * (DESIGN.md 8.1); the technical details stay in the server log, matched by the error code.
+ * explain (lost database connection, timeout, server error). Says what happened and what to do next.
+ * The technical details stay in the server log, matched by the error code.
  */
 export function ErrorView({
   error,

@@ -4,7 +4,7 @@ import { DoorProvider } from "@/components/stage/door-context";
 import { DoorStage } from "@/components/stage/door-stage";
 
 /**
- * Login and sign up: a "big moment" stage, always dark (DESIGN.md section 9).
+ * Login and sign up: a "big moment" stage, always dark.
  * The form comes first in the reading order (and first on phones); the door sits beside it on desktop.
  */
 export default function AuthLayout({ children }: { children: ReactNode }) {

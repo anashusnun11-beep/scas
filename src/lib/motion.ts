@@ -1,5 +1,5 @@
 /**
- * SCAS motion presets. Every animation in the app uses these values; see DESIGN.md "Motion".
+ * SCAS motion presets. Every animation in the app uses these values.
  *
  * Two lanes:
  * - App lane (dashboards, forms): fast, no bounce, 120 to 240 ms. Things people do many times a day.

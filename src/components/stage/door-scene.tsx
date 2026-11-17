@@ -5,7 +5,7 @@ import { Suspense, useEffect, useMemo, useRef } from "react";
 import { MathUtils, SRGBColorSpace, TextureLoader, Vector3, type Group } from "three";
 
 /*
- * The 3D office door for the login stage (DESIGN.md section 9).
+ * The 3D office door for the login stage.
  * Loaded lazily by DoorStage, never during SSR. Plain three.js geometry, no helper libraries,
  * to keep the bundle small. Renders on demand: frames only while the door is moving.
  * `open`: the door eases open over about 1.5 s when the login succeeds.
@@ -23,7 +23,7 @@ const LOOK_AT = new Vector3(0, 1.02, 0);
 
 type Palette = Record<"woodLight" | "wood" | "woodDark" | "edge" | "frame" | "wall" | "floor" | "handle" | "lampCore" | "lamp" | "plate", string>;
 
-/** Colours come from the CSS component tokens, so the 3D door matches the CSS door and DESIGN.md. */
+/** Colours come from the CSS component tokens, so the 3D door matches the CSS door. */
 function readPalette(): Palette {
   const css = getComputedStyle(document.documentElement);
   const v = (name: string) => css.getPropertyValue(name).trim();

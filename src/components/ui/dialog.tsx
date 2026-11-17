@@ -6,7 +6,7 @@ import { cn } from "@/lib/cn";
 
 /**
  * Modal dialog on the native <dialog> element: the browser traps focus, Escape closes it and
- * focus returns to the button that opened it. Entrance is a short CSS animation (DESIGN.md 7, app lane).
+ * focus returns to the button that opened it. Entrance is a short CSS animation.
  */
 export function Dialog({
   open,
