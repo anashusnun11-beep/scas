@@ -46,3 +46,8 @@ next-env.d.ts
 
 # database backups (npm run db:backup): real data, never commit
 /backups/
+
+# recordings and submission working files (sent separately, not part of the system)
+*.mp4
+output/
+FINAL_SUBMISSION/
